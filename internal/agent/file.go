@@ -8,6 +8,21 @@ import (
 	"text/template"
 )
 
+// Field represents a field in the log record.
+type Field struct {
+	// Name of the field in the log record.
+	Name string `yaml:"name"`
+	// Template to convert source fields into new record field.
+	Template string `yaml:"template,omitempty"`
+	// Source field name to extract the value from.
+	Source string `yaml:"source,omitempty"`
+	// Time format only for the "time" field.
+	TimeFormat string `yaml:"time_format,omitempty"`
+
+	source   string
+	template *template.Template
+}
+
 // FileAgent is an implementation of the file-based log agent.
 // It watches log files with inotify for changes and processes new log entries.
 type FileAgent struct {
@@ -24,18 +39,10 @@ type FileAgent struct {
 	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
 	Regex string `yaml:"regex,omitempty"`
 
-	// Time format to parse the timestamp field in log lines
-	Timestamp *TimestampFormat `yaml:"timestamp,omitempty"`
-
 	// Fields to include in the final log record.
-	// Variants:
-	// - empty value: include fields as is
-	// - template: convert log fields into new field using Go template
-	Fields map[string]string `yaml:"templates,omitempty"`
+	Fields []Field `yaml:"fields"`
 
-	templates map[string]*template.Template
-	fields    map[string]struct{}
-
+	timestamp    *TimestampFormat `yaml:"timestamp,omitempty"`
 	regexPattern *regexp.Regexp
 }
 
@@ -64,28 +71,30 @@ func (f *FileAgent) Init() error {
 		return fmt.Errorf("fields are required")
 	}
 
-	f.fields = make(map[string]struct{})
-	f.templates = make(map[string]*template.Template)
+	for i := range f.Fields {
+		field := &f.Fields[i]
+		field.source = field.Source
+		if field.source == "" {
+			field.source = field.Name
+		}
 
-	for key, value := range f.Fields {
-		if value == "" {
-			f.fields[key] = struct{}{}
-		} else {
-			if tpl, err := template.New(key).Parse(value); err != nil {
-				return fmt.Errorf("failed to parse template %s: %w", key, err)
+		if field.Name == "time" {
+			f.timestamp = &TimestampFormat{
+				Format: field.TimeFormat,
+			}
+			if err := f.timestamp.Init(); err != nil {
+				return fmt.Errorf("failed to initialize timestamp format: %w", err)
+			}
+			continue
+		}
+
+		if field.Template != "" {
+			if tpl, err := template.New(field.Name).Parse(field.Template); err != nil {
+				return fmt.Errorf("failed to parse template %s: %w", field.Name, err)
 			} else {
-				f.fields[key] = struct{}{}
-				f.templates[key] = tpl
+				field.template = tpl
 			}
 		}
-	}
-
-	if f.Timestamp != nil {
-		if err := f.Timestamp.Init(); err != nil {
-			return fmt.Errorf("failed to initialize timestamp format: %w", err)
-		}
-
-		f.fields["time"] = struct{}{}
 	}
 
 	return nil
@@ -98,35 +107,50 @@ func (f *FileAgent) Parse(logLine string) (map[string]string, error) {
 		return nil, nil
 	}
 
-	var result map[string]string
+	var raw map[string]string
 	var err error
 
 	switch f.Format {
 	case "json":
-		result, err = f.parseJSON(logLine)
+		raw, err = f.parseJSON(logLine)
 	default: // "plain" or any other format defaults to plain
-		result, err = f.parsePlain(logLine)
+		raw, err = f.parsePlain(logLine)
 	}
 
-	if result == nil || err != nil {
+	if raw == nil || err != nil {
 		return nil, err
 	}
 
-	if f.Timestamp != nil {
-		if err := f.Timestamp.Convert(result); err != nil {
-			return nil, fmt.Errorf("failed to convert timestamp: %w", err)
+	record := make(map[string]string)
+
+	for i := range f.Fields {
+		field := &f.Fields[i]
+		if field.Name == "time" {
+			if t, err := f.timestamp.Convert(raw[field.source]); err != nil {
+				return nil, fmt.Errorf("failed to convert timestamp: %w", err)
+			} else {
+				record[field.Name] = t
+			}
+			continue
+		}
+
+		if field.template != nil {
+			var str strings.Builder
+			if err := field.template.Execute(&str, raw); err != nil {
+				return nil, fmt.Errorf("failed to execute template: %w", err)
+			}
+			record[field.Name] = str.String()
+			continue
+		}
+
+		if val, ok := raw[field.source]; ok {
+			record[field.Name] = val
+		} else {
+			record[field.Name] = ""
 		}
 	}
 
-	f.renderTemplates(result)
-
-	for key := range result {
-		if _, ok := f.fields[key]; !ok {
-			delete(result, key) // Remove fields not in the configured fields
-		}
-	}
-
-	return result, nil
+	return record, nil
 }
 
 // parseJSON extracts fields from a JSON-formatted log line.
@@ -144,16 +168,6 @@ func (f *FileAgent) parseJSON(line string) (map[string]string, error) {
 	}
 
 	return result, nil
-}
-
-func (f *FileAgent) renderTemplates(record map[string]string) {
-	for key, tpl := range f.templates {
-		var str strings.Builder
-		if err := tpl.Execute(&str, record); err != nil {
-			continue // Ignore errors in template rendering
-		}
-		record[key] = str.String()
-	}
 }
 
 // parsePlain extracts fields from a plain-text log line using the configured regex pattern.

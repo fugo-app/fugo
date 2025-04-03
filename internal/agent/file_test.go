@@ -20,8 +20,10 @@ func TestFileAgent_Parse(t *testing.T) {
 				Path:   "/var/log/test.log",
 				Format: "plain",
 				Regex:  `(?P<message>.*)`,
-				Fields: map[string]string{
-					"message": "",
+				Fields: []Field{
+					{
+						Name: "message",
+					},
 				},
 			},
 			line:    "",
@@ -34,13 +36,17 @@ func TestFileAgent_Parse(t *testing.T) {
 				Path:   "/var/log/test.log",
 				Format: "plain",
 				Regex:  `(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
-				Timestamp: &TimestampFormat{
-					Source: "time",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"level":   "",
-					"message": "",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "level",
+					},
+					{
+						Name: "message",
+					},
 				},
 			},
 			line: "2023-01-01 12:00:00 INFO Test message",
@@ -57,13 +63,17 @@ func TestFileAgent_Parse(t *testing.T) {
 				Path:   "/var/log/test.log",
 				Format: "plain",
 				Regex:  `(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
-				Timestamp: &TimestampFormat{
-					Source: "time",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"level":   "",
-					"message": "",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "level",
+					},
+					{
+						Name: "message",
+					},
 				},
 			},
 			line:    "Test message",
@@ -76,14 +86,21 @@ func TestFileAgent_Parse(t *testing.T) {
 				Path:   "/var/log/test.log",
 				Format: "plain",
 				Regex:  `\[(?P<timestamp>[^\]]+)\] \[(?P<level>[^\]]+)\] \[(?P<module>[^\]]+)\] (?P<message>.*)`,
-				Timestamp: &TimestampFormat{
-					Source: "timestamp",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"level":   "",
-					"module":  "",
-					"message": "",
+				Fields: []Field{
+					{
+						Name:       "time",
+						Source:     "timestamp",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "level",
+					},
+					{
+						Name: "module",
+					},
+					{
+						Name: "message",
+					},
 				},
 			},
 			line: "[2023-01-01 12:00:00] [INFO] [auth] User login successful",
@@ -100,13 +117,17 @@ func TestFileAgent_Parse(t *testing.T) {
 			agent: &FileAgent{
 				Path:   "/var/log/test.log",
 				Format: "json",
-				Timestamp: &TimestampFormat{
-					Source: "time",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"level":   "",
-					"message": "",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "level",
+					},
+					{
+						Name: "message",
+					},
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message"}`,
@@ -122,13 +143,17 @@ func TestFileAgent_Parse(t *testing.T) {
 			agent: &FileAgent{
 				Path:   "/var/log/test.log",
 				Format: "json",
-				Timestamp: &TimestampFormat{
-					Source: "time",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"level":   "",
-					"message": "",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "level",
+					},
+					{
+						Name: "message",
+					},
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message","other":"should-not-be-included"}`,
@@ -144,14 +169,20 @@ func TestFileAgent_Parse(t *testing.T) {
 			agent: &FileAgent{
 				Path:   "/var/log/test.log",
 				Format: "json",
-				Timestamp: &TimestampFormat{
-					Source: "time",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"int":   "",
-					"float": "",
-					"bool":  "",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "int",
+					},
+					{
+						Name: "float",
+					},
+					{
+						Name: "bool",
+					},
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","int":123,"float":123.456,"bool":true}`,
@@ -168,12 +199,15 @@ func TestFileAgent_Parse(t *testing.T) {
 			agent: &FileAgent{
 				Path:   "/var/log/test.log",
 				Format: "json",
-				Timestamp: &TimestampFormat{
-					Source: "time",
-					Format: "2006-01-02 15:04:05",
-				},
-				Fields: map[string]string{
-					"formatted": "{{.level}}: {{.message}}",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name:     "formatted",
+						Template: "{{.level}}: {{.message}}",
+					},
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message"}`,
