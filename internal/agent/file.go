@@ -20,9 +20,6 @@ type FileAgent struct {
 	// Default: "plain"
 	Format string `yaml:"format"`
 
-	// Field names to extract from log lines
-	Include []string `yaml:"include,omitempty"`
-
 	// Regex to parse the plain log lines
 	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
 	Regex string `yaml:"regex,omitempty"`
@@ -30,19 +27,15 @@ type FileAgent struct {
 	// Time format to parse the timestamp field in log lines
 	Timestamp *TimestampFormat `yaml:"timestamp,omitempty"`
 
-	// Convert log fields into new fields.
-	// Where key is the new field name and value is the Go template
-	// Example: `{{.level}} {{.message}}`
-	Templates map[string]string `yaml:"templates,omitempty"`
+	// Fields to include in the final log record.
+	// Variants:
+	// - empty value: include fields as is
+	// - template: convert log fields into new field using Go template
+	Fields map[string]string `yaml:"templates,omitempty"`
 
-	// Fields to exclude from the final log record.
-	// Useful for removing fields that were used in templates.
-	// Example: `["level", "message"]`
-	Exclude []string `yaml:"exclude,omitempty"`
+	templates map[string]*template.Template
+	fields    map[string]struct{}
 
-	templates    map[string]*template.Template
-	include      map[string]struct{}
-	exclude      map[string]struct{}
 	regexPattern *regexp.Regexp
 }
 
@@ -67,20 +60,23 @@ func (f *FileAgent) Init() error {
 		}
 	}
 
-	if len(f.Include) > 0 {
-		f.include = make(map[string]struct{})
-		for _, field := range f.Include {
-			f.include[field] = struct{}{}
-		}
-		if f.Timestamp != nil {
-			f.include[f.Timestamp.Source] = struct{}{}
-		}
+	if len(f.Fields) == 0 {
+		return fmt.Errorf("fields are required")
 	}
 
-	if len(f.Exclude) > 0 {
-		f.exclude = make(map[string]struct{})
-		for _, field := range f.Exclude {
-			f.exclude[field] = struct{}{}
+	f.fields = make(map[string]struct{})
+	f.templates = make(map[string]*template.Template)
+
+	for key, value := range f.Fields {
+		if value == "" {
+			f.fields[key] = struct{}{}
+		} else {
+			if tpl, err := template.New(key).Parse(value); err != nil {
+				return fmt.Errorf("failed to parse template %s: %w", key, err)
+			} else {
+				f.fields[key] = struct{}{}
+				f.templates[key] = tpl
+			}
 		}
 	}
 
@@ -88,15 +84,8 @@ func (f *FileAgent) Init() error {
 		if err := f.Timestamp.Init(); err != nil {
 			return fmt.Errorf("failed to initialize timestamp format: %w", err)
 		}
-	}
 
-	for key, tpl := range f.Templates {
-		f.templates = make(map[string]*template.Template)
-		if t, err := template.New(key).Parse(tpl); err != nil {
-			return fmt.Errorf("failed to parse template %s: %w", key, err)
-		} else {
-			f.templates[key] = t
-		}
+		f.fields["time"] = struct{}{}
 	}
 
 	return nil
@@ -123,14 +112,6 @@ func (f *FileAgent) Parse(logLine string) (map[string]string, error) {
 		return nil, err
 	}
 
-	if f.include != nil {
-		for key := range result {
-			if _, ok := f.include[key]; !ok {
-				delete(result, key)
-			}
-		}
-	}
-
 	if f.Timestamp != nil {
 		if err := f.Timestamp.Convert(result); err != nil {
 			return nil, fmt.Errorf("failed to convert timestamp: %w", err)
@@ -139,11 +120,9 @@ func (f *FileAgent) Parse(logLine string) (map[string]string, error) {
 
 	f.renderTemplates(result)
 
-	if f.exclude != nil {
-		for _, field := range f.Exclude {
-			if _, ok := result[field]; ok {
-				delete(result, field)
-			}
+	for key := range result {
+		if _, ok := f.fields[key]; !ok {
+			delete(result, key) // Remove fields not in the configured fields
 		}
 	}
 
