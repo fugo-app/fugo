@@ -127,12 +127,8 @@ func (f *FileAgent) parsePlain(line string) (map[string]string, error) {
 	// Extract named capture groups
 	result := make(map[string]string)
 	for i, name := range f.regexPattern.SubexpNames() {
-		if i == 0 {
-			continue // Skip the full match
-		}
-
-		if name == "" {
-			continue // Skip unnamed groups
+		if i == 0 || name == "" {
+			continue // Skip the full match and unnamed groups
 		}
 
 		result[name] = match[i]
