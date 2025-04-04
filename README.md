@@ -17,6 +17,7 @@ agents:
         - name: time
           time_format: common
         - name: status
+          type: int
         - name: message
           template: "{{.method}} {{.path}}"
   - name: nginx-error
@@ -55,6 +56,7 @@ A named capture group can be used in the fields.
 Each field can be defined with:
 
 - `name`: The name of the field in the output
+- `type`: The type of the field (e.g., `int`, `float`, `string`). Default is `string`
 - `source`: The source field to extract (defaults to the field name)
 - `template`: A Go template to transform source fields into the new field
 - `time_format`: Format for the time field (following Go's time format)
