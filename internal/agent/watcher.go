@@ -35,15 +35,15 @@ func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 
 	worker := NewFileWorker(path, data)
 	fw.workers[name] = worker
-
 	watcher.Add(path)
 }
 
-func (fw *FileWatcher) stopWorker(path string) {
+func (fw *FileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 	name := filepath.Base(path)
 
 	if _, ok := fw.workers[name]; ok {
 		delete(fw.workers, name)
+		watcher.Remove(path)
 	}
 }
 
@@ -95,7 +95,7 @@ func (fw *FileWatcher) watch() {
 
 				fw.startWorker(event.Name, watcher)
 			} else if event.Has(fsnotify.Remove) || event.Has(fsnotify.Rename) {
-				fw.stopWorker(event.Name)
+				fw.stopWorker(event.Name, watcher)
 			}
 		}
 	}
