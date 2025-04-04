@@ -12,7 +12,7 @@ agents:
     file:
       path: /var/log/nginx/access.log
       format: plain
-      regex: '(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+) (?P<body_bytes_sent>[^ ]+) "(?P<http_referer>[^"]*)" "(?P<http_user_agent>[^"]*)"'
+      regex: '^(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+)'
       fields:
         - name: time
           time_format: common

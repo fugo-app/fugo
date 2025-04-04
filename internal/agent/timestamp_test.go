@@ -67,6 +67,15 @@ func TestTimestampFormat_Convert(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "common format",
+			timestamp: &TimestampFormat{
+				Format: "common",
+			},
+			input:   "10/Oct/2000:13:55:36 -0700",
+			want:    "2000-10-10T13:55:36.000-07:00",
+			wantErr: false,
+		},
+		{
 			name: "invalid timestamp format",
 			timestamp: &TimestampFormat{
 				Format: "rfc3339",

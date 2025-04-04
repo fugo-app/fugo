@@ -35,7 +35,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			agent: &FileAgent{
 				Path:   "/var/log/test.log",
 				Format: "plain",
-				Regex:  `(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
+				Regex:  `^(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
 				Fields: []Field{
 					{
 						Name:       "time",
@@ -78,6 +78,29 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line:    "Test message",
 			want:    nil,
+			wantErr: false,
+		},
+		{
+			name: "parse plain log with partial mathching regex",
+			agent: &FileAgent{
+				Path:   "/var/log/test.log",
+				Format: "plain",
+				Regex:  `^(?P<time>[^ ]+ [^ ]+) (?P<level>\w+)`,
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "level",
+					},
+				},
+			},
+			line: "2023-01-01 12:00:00 INFO Test message",
+			want: map[string]string{
+				"time":  "2023-01-01T12:00:00.000Z",
+				"level": "INFO",
+			},
 			wantErr: false,
 		},
 		{
@@ -227,8 +250,8 @@ func TestFileAgent_Parse(t *testing.T) {
 				require.Error(t, err, "Expected error but got none")
 			} else {
 				require.NoError(t, err, "Unexpected error")
+				require.Equal(t, tt.want, got, "Map not equal", tt.name)
 			}
-			require.Equal(t, tt.want, got, "Map not equal", tt.name)
 		})
 	}
 }
