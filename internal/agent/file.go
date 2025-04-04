@@ -4,27 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"strconv"
-	"strings"
-	"text/template"
 )
-
-// Field represents a field in the log record.
-type Field struct {
-	// Name of the field in the log record.
-	Name string `yaml:"name"`
-	// Template to convert source fields into new record field.
-	Template string `yaml:"template,omitempty"`
-	// Source field name to extract the value from.
-	Source string `yaml:"source,omitempty"`
-	// Time format only for the "time" field.
-	TimeFormat string `yaml:"time_format,omitempty"`
-	// Feild type: "string", "int", "float". Default: "string"
-	Type string `yaml:"type,omitempty"`
-
-	source   string
-	template *template.Template
-}
 
 // FileAgent is an implementation of the file-based log agent.
 // It watches log files with inotify for changes and processes new log entries.
@@ -76,27 +56,8 @@ func (f *FileAgent) Init() error {
 
 	for i := range f.Fields {
 		field := &f.Fields[i]
-		field.source = field.Source
-		if field.source == "" {
-			field.source = field.Name
-		}
-
-		if field.Name == "time" {
-			f.timestamp = &TimestampFormat{
-				Format: field.TimeFormat,
-			}
-			if err := f.timestamp.Init(); err != nil {
-				return fmt.Errorf("failed to initialize timestamp format: %w", err)
-			}
-			continue
-		}
-
-		if field.Template != "" {
-			if tpl, err := template.New(field.Name).Parse(field.Template); err != nil {
-				return fmt.Errorf("failed to parse template %s: %w", field.Name, err)
-			} else {
-				field.template = tpl
-			}
+		if err := field.Init(); err != nil {
+			return fmt.Errorf("field %s init: %w", field.Name, err)
 		}
 	}
 
@@ -128,44 +89,12 @@ func (f *FileAgent) Parse(line string) (map[string]any, error) {
 
 	for i := range f.Fields {
 		field := &f.Fields[i]
-		if field.Name == "time" {
-			if t, err := f.timestamp.Convert(raw[field.source]); err != nil {
-				return nil, fmt.Errorf("failed to convert timestamp: %w", err)
-			} else {
-				record[field.Name] = t
-			}
-			continue
-		}
-
-		if field.template != nil {
-			var str strings.Builder
-			if err := field.template.Execute(&str, raw); err == nil {
-				record[field.Name] = str.String()
-			} else {
-				record[field.Name] = ""
-			}
-			continue
-		}
-
-		if val, ok := raw[field.source]; ok {
-			switch field.Type {
-			case "", "string":
+		if val, err := field.Process(raw); err == nil {
+			if val != nil {
 				record[field.Name] = val
-			case "int":
-				if val, err := strconv.ParseInt(val, 0, 64); err == nil {
-					record[field.Name] = val
-				} else {
-					record[field.Name] = 0
-				}
-			case "float":
-				if val, err := strconv.ParseFloat(val, 64); err == nil {
-					record[field.Name] = val
-				} else {
-					record[field.Name] = 0.0
-				}
 			}
 		} else {
-			record[field.Name] = ""
+			return nil, fmt.Errorf("failed to process field %s: %w", field.Name, err)
 		}
 	}
 
