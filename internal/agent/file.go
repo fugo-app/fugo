@@ -25,7 +25,6 @@ type FileAgent struct {
 	// Fields to include in the final log record.
 	Fields []Field `yaml:"fields"`
 
-	timestamp    *TimestampFormat `yaml:"timestamp,omitempty"`
 	regexPattern *regexp.Regexp
 }
 
