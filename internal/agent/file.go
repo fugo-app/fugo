@@ -27,7 +27,7 @@ type Field struct {
 // It watches log files with inotify for changes and processes new log entries.
 type FileAgent struct {
 	// Path to the log file or regex pattern to match multiple files.
-	// A named capture group can be used in the regex.
+	// A named capture group can be used in the fields.
 	// For example: `/var/log/nginx/access_(?P<host>.*)\.log`
 	Path string `yaml:"path"`
 

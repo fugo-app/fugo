@@ -12,7 +12,7 @@ import (
 type TimestampFormat struct {
 	// Format of the timestamp.
 	// Default: "rfc3339"
-	// Supported: "rfc3339", "unix", or custom Go layout (e.g. "2006-01-02 15:04:05")
+	// Supported: "rfc3339", "common", "unix", or custom Go layout (e.g. "2006-01-02 15:04:05")
 	Format string `yaml:"format,omitempty"`
 
 	// Go time layout used in time.Parse
@@ -26,6 +26,9 @@ func (t *TimestampFormat) Init() error {
 	switch t.Format {
 	case "", "rfc3339":
 		t.layout = time.RFC3339
+	case "common":
+		// Common log format used by web servers
+		t.layout = "02/Jan/2006:15:04:05 -0700"
 	case "unix":
 		// Unix timestamp doesn't need a layout as it will be parsed differently
 		t.layout = "unix"
