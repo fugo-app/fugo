@@ -11,7 +11,7 @@ func TestFileAgent_Parse(t *testing.T) {
 		name    string
 		agent   *FileAgent
 		line    string
-		want    map[string]string
+		want    map[string]any
 		wantErr bool
 	}{
 		{
@@ -50,7 +50,7 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: "2023-01-01 12:00:00 INFO Test message",
-			want: map[string]string{
+			want: map[string]any{
 				"time":    "2023-01-01T12:00:00.000Z",
 				"level":   "INFO",
 				"message": "Test message",
@@ -97,7 +97,7 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: "2023-01-01 12:00:00 INFO Test message",
-			want: map[string]string{
+			want: map[string]any{
 				"time":  "2023-01-01T12:00:00.000Z",
 				"level": "INFO",
 			},
@@ -127,7 +127,7 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: "[2023-01-01 12:00:00] [INFO] [auth] User login successful",
-			want: map[string]string{
+			want: map[string]any{
 				"time":    "2023-01-01T12:00:00.000Z",
 				"level":   "INFO",
 				"module":  "auth",
@@ -154,7 +154,7 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message"}`,
-			want: map[string]string{
+			want: map[string]any{
 				"time":    "2023-01-01T12:00:00.000Z",
 				"level":   "INFO",
 				"message": "Test message",
@@ -180,7 +180,7 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message","other":"should-not-be-included"}`,
-			want: map[string]string{
+			want: map[string]any{
 				"time":    "2023-01-01T12:00:00.000Z",
 				"level":   "INFO",
 				"message": "Test message",
@@ -188,7 +188,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "parse valid JSON with type conversion",
+			name: "parse valid JSON without type conversion",
 			agent: &FileAgent{
 				Path:   "/var/log/test.log",
 				Format: "json",
@@ -209,11 +209,39 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","int":123,"float":123.456,"bool":true}`,
-			want: map[string]string{
+			want: map[string]any{
 				"time":  "2023-01-01T12:00:00.000Z",
 				"int":   "123",
 				"float": "123.456",
 				"bool":  "true",
+			},
+			wantErr: false,
+		},
+		{
+			name: "parse valid JSON with type conversion",
+			agent: &FileAgent{
+				Path:   "/var/log/test.log",
+				Format: "json",
+				Fields: []Field{
+					{
+						Name:       "time",
+						TimeFormat: "2006-01-02 15:04:05",
+					},
+					{
+						Name: "int",
+						Type: "int",
+					},
+					{
+						Name: "float",
+						Type: "float",
+					},
+				},
+			},
+			line: `{"time":"2023-01-01 12:00:00","int":123,"float":123.456}`,
+			want: map[string]any{
+				"time":  "2023-01-01T12:00:00.000Z",
+				"int":   int64(123),
+				"float": float64(123.456),
 			},
 			wantErr: false,
 		},
@@ -234,7 +262,7 @@ func TestFileAgent_Parse(t *testing.T) {
 				},
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message"}`,
-			want: map[string]string{
+			want: map[string]any{
 				"time":      "2023-01-01T12:00:00.000Z",
 				"formatted": "INFO: Test message",
 			},

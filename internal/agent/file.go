@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 	"text/template"
 )
@@ -18,6 +19,8 @@ type Field struct {
 	Source string `yaml:"source,omitempty"`
 	// Time format only for the "time" field.
 	TimeFormat string `yaml:"time_format,omitempty"`
+	// Feild type: "string", "int", "float". Default: "string"
+	Type string `yaml:"type,omitempty"`
 
 	source   string
 	template *template.Template
@@ -102,8 +105,8 @@ func (f *FileAgent) Init() error {
 
 // Parse processes a log line based on the configured format (JSON or plain)
 // and returns a map of field names to values extracted from the log line.
-func (f *FileAgent) Parse(logLine string) (map[string]string, error) {
-	if logLine == "" {
+func (f *FileAgent) Parse(line string) (map[string]any, error) {
+	if line == "" {
 		return nil, nil
 	}
 
@@ -112,16 +115,16 @@ func (f *FileAgent) Parse(logLine string) (map[string]string, error) {
 
 	switch f.Format {
 	case "json":
-		raw, err = f.parseJSON(logLine)
+		raw, err = f.parseJSON(line)
 	default: // "plain" or any other format defaults to plain
-		raw, err = f.parsePlain(logLine)
+		raw, err = f.parsePlain(line)
 	}
 
 	if raw == nil || err != nil {
 		return nil, err
 	}
 
-	record := make(map[string]string)
+	record := make(map[string]any)
 
 	for i := range f.Fields {
 		field := &f.Fields[i]
@@ -136,15 +139,31 @@ func (f *FileAgent) Parse(logLine string) (map[string]string, error) {
 
 		if field.template != nil {
 			var str strings.Builder
-			if err := field.template.Execute(&str, raw); err != nil {
-				return nil, fmt.Errorf("failed to execute template: %w", err)
+			if err := field.template.Execute(&str, raw); err == nil {
+				record[field.Name] = str.String()
+			} else {
+				record[field.Name] = ""
 			}
-			record[field.Name] = str.String()
 			continue
 		}
 
 		if val, ok := raw[field.source]; ok {
-			record[field.Name] = val
+			switch field.Type {
+			case "", "string":
+				record[field.Name] = val
+			case "int":
+				if val, err := strconv.ParseInt(val, 0, 64); err == nil {
+					record[field.Name] = val
+				} else {
+					record[field.Name] = 0
+				}
+			case "float":
+				if val, err := strconv.ParseFloat(val, 64); err == nil {
+					record[field.Name] = val
+				} else {
+					record[field.Name] = 0.0
+				}
+			}
 		} else {
 			record[field.Name] = ""
 		}
