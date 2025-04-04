@@ -41,41 +41,45 @@ func (t *TimestampFormat) Init() error {
 }
 
 // Convert processes a log record and converts the timestamp field specified by Source
-// to RFC3339 format with millisecond precision, storing it in the "time" field.
-// The original timestamp field is removed from the map.
-func (t *TimestampFormat) Convert(source string) (string, error) {
-
-	var parsedTime time.Time
-	var err error
-
+// to unix timestamp format with millisecond precision.
+func (t *TimestampFormat) Convert(source string) (int64, error) {
 	// Parse the timestamp based on the configured format
 	if t.layout == "unix" {
-		sec, frac, ok := strings.Cut(source, ".")
-
-		seconds, err := strconv.ParseInt(sec, 10, 64)
-		if err != nil {
-			return "", fmt.Errorf("invalid timestamp '%s' (seconds): %w", source, err)
-		}
-
-		nanoseconds := int64(0)
-		if ok {
-			frac = frac + "000000000"
-			frac = frac[:9]
-			nanoseconds, err = strconv.ParseInt(frac, 10, 64)
-			if err != nil {
-				return "", fmt.Errorf("invalid timestamp '%s' (fraction): %w", source, err)
-			}
-		}
-
-		parsedTime = time.Unix(seconds, nanoseconds).UTC()
-	} else {
-		// Parse using the configured layout
-		parsedTime, err = time.Parse(t.layout, source)
-		if err != nil {
-			return "", fmt.Errorf("invalid timestamp '%s' (%s): %w", source, t.Format, err)
-		}
+		return convertUnix(source)
 	}
 
-	// Format the parsed time as RFC3339 with millisecond precision
-	return parsedTime.Format("2006-01-02T15:04:05.000Z07:00"), nil
+	// Parse using the configured layout
+	parsedTime, err := time.Parse(t.layout, source)
+	if err != nil {
+		return 0, fmt.Errorf("invalid timestamp '%s' (%s): %w", source, t.Format, err)
+	}
+
+	return parsedTime.UnixMilli(), nil
+}
+
+func convertUnix(source string) (int64, error) {
+	sec, frac, ok := strings.Cut(source, ".")
+	seconds, err := strconv.ParseInt(sec, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid timestamp '%s' (seconds): %w", source, err)
+	}
+
+	milliseconds := seconds * 1000
+	if !ok {
+		return milliseconds, nil
+	}
+
+	limit := len(frac)
+	if limit > 3 {
+		limit = 3
+	}
+
+	multiply := int64(100)
+	for i := 0; i < limit; i++ {
+		ch := frac[i] - '0'
+		milliseconds = milliseconds + (int64(ch) * multiply)
+		multiply = multiply / 10
+	}
+
+	return milliseconds, nil
 }

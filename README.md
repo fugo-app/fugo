@@ -46,10 +46,10 @@ File-based input has the following configuration:
 The `path` can be a single file or a regex pattern. For example:
 
 ```yaml
-path: '/var/log/nginx/(?P<host>.*)/access\.log'
+path: '/var/log/nginx/access_(?P<host>.*)\.log'
 ```
 
-A named capture group can be used in the fields.
+A named capture group should be in the file name only and can be used in the fields.
 
 ### Field Configuration
 

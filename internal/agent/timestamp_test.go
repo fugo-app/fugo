@@ -54,7 +54,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 		name      string
 		timestamp *TimestampFormat
 		input     string
-		want      string
+		want      int64
 		wantErr   bool
 	}{
 		{
@@ -63,7 +63,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "rfc3339",
 			},
 			input:   "2023-01-01T12:00:00Z",
-			want:    "2023-01-01T12:00:00.000Z",
+			want:    1672574400000,
 			wantErr: false,
 		},
 		{
@@ -72,7 +72,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "common",
 			},
 			input:   "10/Oct/2000:13:55:36 -0700",
-			want:    "2000-10-10T13:55:36.000-07:00",
+			want:    971211336000,
 			wantErr: false,
 		},
 		{
@@ -81,7 +81,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "rfc3339",
 			},
 			input:   "invalid-date",
-			want:    "invalid-date",
+			want:    0,
 			wantErr: true,
 		},
 		{
@@ -90,7 +90,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "unix",
 			},
 			input:   "1672574400",
-			want:    "2023-01-01T12:00:00.000Z",
+			want:    1672574400000,
 			wantErr: false,
 		},
 		{
@@ -99,7 +99,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "unix",
 			},
 			input:   "1672574400.123",
-			want:    "2023-01-01T12:00:00.123Z",
+			want:    1672574400123,
 			wantErr: false,
 		},
 		{
@@ -108,7 +108,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "unix",
 			},
 			input:   "not-a-number",
-			want:    "not-a-number",
+			want:    0,
 			wantErr: true,
 		},
 		{
@@ -117,7 +117,7 @@ func TestTimestampFormat_Convert(t *testing.T) {
 				Format: "2006-01-02 15:04:05",
 			},
 			input:   "2023-01-01 12:00:00",
-			want:    "2023-01-01T12:00:00.000Z",
+			want:    1672574400000,
 			wantErr: false,
 		},
 	}
@@ -142,7 +142,7 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 		name      string
 		timestamp *TimestampFormat
 		input     string
-		want      string
+		want      int64
 	}{
 		{
 			name: "UTC timezone",
@@ -150,7 +150,7 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 				Format: "rfc3339",
 			},
 			input: "2023-01-01T12:00:00Z",
-			want:  "2023-01-01T12:00:00.000Z",
+			want:  1672574400000,
 		},
 		{
 			name: "Positive timezone offset",
@@ -158,7 +158,7 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 				Format: "rfc3339",
 			},
 			input: "2023-01-01T17:00:00+05:00",
-			want:  "2023-01-01T12:00:00.000Z", // UTC equivalent
+			want:  1672574400000, // UTC equivalent
 		},
 		{
 			name: "Negative timezone offset",
@@ -166,7 +166,7 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 				Format: "rfc3339",
 			},
 			input: "2023-01-01T07:00:00-05:00",
-			want:  "2023-01-01T12:00:00.000Z", // UTC equivalent
+			want:  1672574400000, // UTC equivalent
 		},
 		{
 			name: "Custom format with timezone",
@@ -174,7 +174,7 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 				Format: "2006-01-02 15:04:05 -0700",
 			},
 			input: "2023-01-01 07:00:00 -0500",
-			want:  "2023-01-01T12:00:00.000Z", // UTC equivalent
+			want:  1672574400000, // UTC equivalent
 		},
 	}
 
@@ -187,10 +187,7 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 			result, err := tt.timestamp.Convert(tt.input)
 			require.NoError(t, err, "Failed to convert timestamp")
 
-			// Normalize times to UTC for comparison
-			parsed, _ := time.Parse(time.RFC3339Nano, result)
-			got := parsed.UTC().Format("2006-01-02T15:04:05.000Z")
-			require.Equal(t, tt.want, got, "Unexpected result for timestamp conversion")
+			require.Equal(t, tt.want, result, "Unexpected result for timestamp conversion")
 		})
 	}
 }

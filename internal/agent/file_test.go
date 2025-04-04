@@ -51,7 +51,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: "2023-01-01 12:00:00 INFO Test message",
 			want: map[string]any{
-				"time":    "2023-01-01T12:00:00.000Z",
+				"time":    int64(1672574400000),
 				"level":   "INFO",
 				"message": "Test message",
 			},
@@ -98,7 +98,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: "2023-01-01 12:00:00 INFO Test message",
 			want: map[string]any{
-				"time":  "2023-01-01T12:00:00.000Z",
+				"time":  int64(1672574400000),
 				"level": "INFO",
 			},
 			wantErr: false,
@@ -128,7 +128,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: "[2023-01-01 12:00:00] [INFO] [auth] User login successful",
 			want: map[string]any{
-				"time":    "2023-01-01T12:00:00.000Z",
+				"time":    int64(1672574400000),
 				"level":   "INFO",
 				"module":  "auth",
 				"message": "User login successful",
@@ -155,7 +155,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message"}`,
 			want: map[string]any{
-				"time":    "2023-01-01T12:00:00.000Z",
+				"time":    int64(1672574400000),
 				"level":   "INFO",
 				"message": "Test message",
 			},
@@ -181,7 +181,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message","other":"should-not-be-included"}`,
 			want: map[string]any{
-				"time":    "2023-01-01T12:00:00.000Z",
+				"time":    int64(1672574400000),
 				"level":   "INFO",
 				"message": "Test message",
 			},
@@ -210,7 +210,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: `{"time":"2023-01-01 12:00:00","int":123,"float":123.456,"bool":true}`,
 			want: map[string]any{
-				"time":  "2023-01-01T12:00:00.000Z",
+				"time":  int64(1672574400000),
 				"int":   "123",
 				"float": "123.456",
 				"bool":  "true",
@@ -239,7 +239,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: `{"time":"2023-01-01 12:00:00","int":123,"float":123.456}`,
 			want: map[string]any{
-				"time":  "2023-01-01T12:00:00.000Z",
+				"time":  int64(1672574400000),
 				"int":   int64(123),
 				"float": float64(123.456),
 			},
@@ -263,7 +263,7 @@ func TestFileAgent_Parse(t *testing.T) {
 			},
 			line: `{"time":"2023-01-01 12:00:00","level":"INFO","message":"Test message"}`,
 			want: map[string]any{
-				"time":      "2023-01-01T12:00:00.000Z",
+				"time":      int64(1672574400000),
 				"formatted": "INFO: Test message",
 			},
 			wantErr: false,
