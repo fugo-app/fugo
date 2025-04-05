@@ -29,6 +29,10 @@ jobs:
             pkg-config \
             libssl-dev
 
+      - name: Setup version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME:1}" >> $GITHUB_ENV
+
       - name: Build Fugo
         env:
           GOARCH: amd64
@@ -38,7 +42,7 @@ jobs:
         run: |
           go build \
             -o fugo-linux-amd64 \
-            -ldflags "-s -w -linkmode external -extldflags -static" \
+            -ldflags "-s -w -linkmode external -extldflags -static -X main.Version=${{ env.VERSION }}" \
             -trimpath \
             -v \
             ./cmd/fugo
