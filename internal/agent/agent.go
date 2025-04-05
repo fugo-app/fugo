@@ -14,7 +14,7 @@ type Agent struct {
 	Fields []field.Field `yaml:"fields"`
 
 	// File-based log source.
-	File *file.FileAgent `yaml:"file,omitempty"`
+	File *file.FileWatcher `yaml:"file,omitempty"`
 }
 
 func (a *Agent) Init() error {

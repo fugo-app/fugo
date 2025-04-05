@@ -9,44 +9,103 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
-
 	"github.com/runcitrus/fugo/internal/source"
 )
 
-type fileWatcher struct {
-	dir       string
-	re        *regexp.Regexp
-	parser    fileParser
+// FileWatcher is an implementation of the file-based log agent.
+// It watches log files with inotify for changes and processes new log entries.
+type FileWatcher struct {
+	// Path to the log file or regex pattern to match multiple files.
+	// A named capture group can be used in the fields.
+	// For example: `/var/log/nginx/access_(?P<host>.*)\.log`
+	Path string `yaml:"path"`
+
+	// Log format to parse the log file: "plain" or "json"
+	// Default: "plain"
+	Format string `yaml:"format"`
+
+	// Regex to parse the plain log lines
+	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
+	Regex string `yaml:"regex,omitempty"`
+
+	dir       string         // Base directory for the path
+	re        *regexp.Regexp // Regex to match the file name
+	parser    fileParser     // Line parser
 	processor source.Processor
 	workers   map[string]*fileWorker
 
 	stop chan struct{}
 }
 
-func newFileWatcher(path string, parser fileParser, processor source.Processor) (*fileWatcher, error) {
-	if !strings.HasPrefix(path, "/") {
-		return nil, fmt.Errorf("path must be absolute: %s", path)
+func (fw *FileWatcher) Init(processor source.Processor) error {
+	if fw.Path == "" {
+		return fmt.Errorf("path is required")
 	}
 
-	dir, pattern := filepath.Split(path)
+	if !strings.HasPrefix(fw.Path, "/") {
+		return fmt.Errorf("path must be absolute: %s", fw.Path)
+	}
 
+	if fw.Format == "" {
+		fw.Format = "plain"
+	}
+
+	if fw.Format == "plain" {
+		if fw.Regex == "" {
+			return fmt.Errorf("regex is required for plain format")
+		}
+
+		p, err := newPlainParser(fw.Regex)
+		if err != nil {
+			return fmt.Errorf("plain parser: %w", err)
+		} else {
+			fw.parser = p
+		}
+	} else if fw.Format == "json" {
+		p, err := newJsonParser()
+		if err != nil {
+			return fmt.Errorf("json parser: %w", err)
+		} else {
+			fw.parser = p
+		}
+	} else {
+		return fmt.Errorf("unsupported format: %s", fw.Format)
+	}
+
+	dir, pattern := filepath.Split(fw.Path)
 	pattern = "^" + pattern + "$"
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, fmt.Errorf("invalid regex: %w", err)
+	if re, err := regexp.Compile(pattern); err != nil {
+		return fmt.Errorf("invalid regex: %w", err)
+	} else {
+		fw.re = re
 	}
 
-	return &fileWatcher{
-		dir:       dir,
-		re:        re,
-		parser:    parser,
-		processor: processor,
-		workers:   make(map[string]*fileWorker),
-		stop:      make(chan struct{}),
-	}, nil
+	fw.dir = dir
+	fw.processor = processor
+	fw.workers = make(map[string]*fileWorker)
+
+	return nil
 }
 
-func (fw *fileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
+// Start begins monitoring log files specified by the path pattern.
+// For each matched file, it launches a goroutine that watches for changes.
+func (fw *FileWatcher) Start() {
+	fw.stop = make(chan struct{})
+	go fw.watch()
+}
+
+// Stop stops monitoring the log files and closes the watcher.
+func (fw *FileWatcher) Stop() {
+	if fw.stop != nil {
+		close(fw.stop)
+	}
+
+	for _, worker := range fw.workers {
+		worker.Stop()
+	}
+}
+
+func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 	name := filepath.Base(path)
 	match := fw.re.FindStringSubmatch(name)
 	if match == nil {
@@ -72,7 +131,7 @@ func (fw *fileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 	watcher.Add(path)
 }
 
-func (fw *fileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
+func (fw *FileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 	name := filepath.Base(path)
 
 	if worker, ok := fw.workers[name]; ok {
@@ -82,7 +141,7 @@ func (fw *fileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 	}
 }
 
-func (fw *fileWatcher) watch() {
+func (fw *FileWatcher) watch() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		slog.Error("failed to start watcher", "dir", fw.dir, "error", err)
@@ -133,22 +192,5 @@ func (fw *fileWatcher) watch() {
 				fw.stopWorker(event.Name, watcher)
 			}
 		}
-	}
-}
-
-// Start begins monitoring log files specified by the path pattern.
-// For each matched file, it launches a goroutine that watches for changes.
-func (fw *fileWatcher) Start() {
-	go fw.watch()
-}
-
-// Stop stops monitoring the log files and closes the watcher.
-func (fw *fileWatcher) Stop() {
-	if fw.stop != nil {
-		close(fw.stop)
-	}
-
-	for _, worker := range fw.workers {
-		worker.Stop()
 	}
 }

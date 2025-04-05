@@ -9,12 +9,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type dummyParser struct{}
-
-func (d *dummyParser) Parse(line string) (map[string]string, error) {
-	return map[string]string{"message": line}, nil
-}
-
 type dummyProcessor struct{}
 
 func (d *dummyProcessor) Process(data map[string]string) {}
@@ -26,11 +20,14 @@ func TestFileWatcher_WorkerManagement(t *testing.T) {
 	var ok bool
 
 	// Create a watcher instance
-	path := filepath.Join(tempDir, "(?P<host>.*)\\.log")
-	parser := &dummyParser{}
+	watcher := &FileWatcher{
+		Path:   filepath.Join(tempDir, "(?P<host>.*)\\.log"),
+		Format: "plain",
+		Regex:  `(?P<message>.*)`,
+	}
 	processor := &dummyProcessor{}
-	watcher, err := newFileWatcher(path, parser, processor)
-	require.NoError(t, err, "failed to create watcher")
+	err := watcher.Init(processor)
+	require.NoError(t, err, "failed to create file watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension
 	watcher.Start()
@@ -75,11 +72,14 @@ func TestFileWatcher_MultipleWorkers(t *testing.T) {
 	var ok bool
 
 	// Create a watcher instance
-	path := filepath.Join(tempDir, "(?P<host>.*)\\.log")
-	parser := &dummyParser{}
+	watcher := &FileWatcher{
+		Path:   filepath.Join(tempDir, "(?P<host>.*)\\.log"),
+		Format: "plain",
+		Regex:  `(?P<message>.*)`,
+	}
 	processor := &dummyProcessor{}
-	watcher, err := newFileWatcher(path, parser, processor)
-	require.NoError(t, err, "failed to create watcher")
+	err := watcher.Init(processor)
+	require.NoError(t, err, "failed to create file watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension
 	watcher.Start()
