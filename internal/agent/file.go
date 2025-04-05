@@ -1,11 +1,12 @@
 package agent
 
 import (
-	"encoding/json"
 	"fmt"
-	"maps"
-	"regexp"
 )
+
+type FileParser interface {
+	Parse(line string, data map[string]string) (map[string]string, error)
+}
 
 // FileAgent is an implementation of the file-based log agent.
 // It watches log files with inotify for changes and processes new log entries.
@@ -23,10 +24,7 @@ type FileAgent struct {
 	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
 	Regex string `yaml:"regex,omitempty"`
 
-	// Fields to include in the final log record.
-	Fields []Field `yaml:"fields"`
-
-	regexPattern *regexp.Regexp
+	parser FileParser
 }
 
 func (f *FileAgent) Init() error {
@@ -43,104 +41,22 @@ func (f *FileAgent) Init() error {
 			return fmt.Errorf("regex is required for plain format")
 		}
 
-		if pattern, err := regexp.Compile(f.Regex); err != nil {
-			return fmt.Errorf("failed to compile regex pattern: %w", err)
+		p, err := newPlainParser(f.Regex)
+		if err != nil {
+			return fmt.Errorf("failed to create plain parser: %w", err)
 		} else {
-			f.regexPattern = pattern
+			f.parser = p
 		}
-	}
-
-	if len(f.Fields) == 0 {
-		return fmt.Errorf("fields are required")
-	}
-
-	for i := range f.Fields {
-		field := &f.Fields[i]
-		if err := field.Init(); err != nil {
-			return fmt.Errorf("field %s init: %w", field.Name, err)
+	} else if f.Format == "json" {
+		p, err := newJsonParser()
+		if err != nil {
+			return fmt.Errorf("failed to create JSON parser: %w", err)
+		} else {
+			f.parser = p
 		}
+	} else {
+		return fmt.Errorf("unsupported format: %s", f.Format)
 	}
 
 	return nil
-}
-
-// Parse processes a log line based on the configured format (JSON or plain)
-// and returns a map of field names to values extracted from the log line.
-func (f *FileAgent) Parse(line string, data map[string]string) (map[string]any, error) {
-	if line == "" {
-		return nil, nil
-	}
-
-	var raw map[string]string
-	var err error
-
-	switch f.Format {
-	case "json":
-		raw, err = f.parseJSON(line)
-	default: // "plain" or any other format defaults to plain
-		raw, err = f.parsePlain(line)
-	}
-
-	if raw == nil || err != nil {
-		return nil, err
-	}
-
-	maps.Copy(raw, data)
-
-	record := make(map[string]any)
-
-	for i := range f.Fields {
-		field := &f.Fields[i]
-		if val, err := field.Process(raw); err == nil {
-			if val != nil {
-				record[field.Name] = val
-			}
-		} else {
-			return nil, fmt.Errorf("failed to process field %s: %w", field.Name, err)
-		}
-	}
-
-	return record, nil
-}
-
-// parseJSON extracts fields from a JSON-formatted log line.
-// If JSON fields are specified, only those fields are extracted.
-func (f *FileAgent) parseJSON(line string) (map[string]string, error) {
-	var data map[string]interface{}
-	if err := json.Unmarshal([]byte(line), &data); err != nil {
-		return nil, fmt.Errorf("failed to parse JSON log line: %w", err)
-	}
-
-	result := make(map[string]string)
-
-	for key, val := range data {
-		result[key] = fmt.Sprintf("%v", val)
-	}
-
-	return result, nil
-}
-
-// parsePlain extracts fields from a plain-text log line using the configured regex pattern.
-func (f *FileAgent) parsePlain(line string) (map[string]string, error) {
-	match := f.regexPattern.FindStringSubmatch(line)
-	if match == nil {
-		return nil, nil
-	}
-
-	// Extract named capture groups
-	result := make(map[string]string)
-	for i, name := range f.regexPattern.SubexpNames() {
-		if i == 0 || name == "" {
-			continue // Skip the full match and unnamed groups
-		}
-
-		result[name] = match[i]
-	}
-
-	// If no named groups were matched, return the log line as a message
-	if len(result) == 0 {
-		return nil, nil
-	}
-
-	return result, nil
 }
