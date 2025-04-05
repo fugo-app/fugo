@@ -11,7 +11,6 @@ func TestPlainParser_Parse(t *testing.T) {
 		name    string
 		pattern string
 		line    string
-		data    map[string]string
 		want    map[string]string
 		wantErr bool
 	}{
@@ -19,7 +18,6 @@ func TestPlainParser_Parse(t *testing.T) {
 			name:    "parse plain log",
 			pattern: `^(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
 			line:    "2023-01-01 12:00:00 INFO Test message",
-			data:    nil,
 			want: map[string]string{
 				"time":    "2023-01-01 12:00:00",
 				"level":   "INFO",
@@ -31,7 +29,6 @@ func TestPlainParser_Parse(t *testing.T) {
 			name:    "non-matching regex",
 			pattern: `(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
 			line:    "Test message",
-			data:    nil,
 			want:    nil,
 			wantErr: false,
 		},
@@ -39,7 +36,6 @@ func TestPlainParser_Parse(t *testing.T) {
 			name:    "partial mathching regex",
 			pattern: `^(?P<time>[^ ]+ [^ ]+) (?P<level>\w+)`,
 			line:    "2023-01-01 12:00:00 INFO Test message",
-			data:    nil,
 			want: map[string]string{
 				"time":  "2023-01-01 12:00:00",
 				"level": "INFO",
@@ -50,29 +46,11 @@ func TestPlainParser_Parse(t *testing.T) {
 			name:    "complex log format",
 			pattern: `\[(?P<timestamp>[^\]]+)\] \[(?P<level>[^\]]+)\] \[(?P<module>[^\]]+)\] (?P<message>.*)`,
 			line:    "[2023-01-01 12:00:00] [INFO] [auth] User login successful",
-			data:    nil,
 			want: map[string]string{
 				"timestamp": "2023-01-01 12:00:00",
 				"level":     "INFO",
 				"module":    "auth",
 				"message":   "User login successful",
-			},
-			wantErr: false,
-		},
-		{
-			name:    "join external data",
-			pattern: `^(?P<time>[^ ]+ [^ ]+) (?P<level>\w+) (?P<message>.*)`,
-			line:    "2023-01-01 12:00:00 INFO Test message",
-			data: map[string]string{
-				"source": "test_source",
-				"host":   "test_host",
-			},
-			want: map[string]string{
-				"time":    "2023-01-01 12:00:00",
-				"level":   "INFO",
-				"message": "Test message",
-				"source":  "test_source",
-				"host":    "test_host",
 			},
 			wantErr: false,
 		},
@@ -82,7 +60,7 @@ func TestPlainParser_Parse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			parser, err := newPlainParser(tt.pattern)
 			require.NoError(t, err, "Failed to initialize FileAgent")
-			got, err := parser.Parse(tt.line, tt.data)
+			got, err := parser.Parse(tt.line)
 			if tt.wantErr {
 				require.Error(t, err, "Expected error but got none")
 			} else {

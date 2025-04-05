@@ -2,7 +2,6 @@ package file
 
 import (
 	"fmt"
-	"maps"
 	"regexp"
 )
 
@@ -19,7 +18,7 @@ func newPlainParser(pattern string) (*plainParser, error) {
 	}
 }
 
-func (p *plainParser) Parse(line string, data map[string]string) (map[string]string, error) {
+func (p *plainParser) Parse(line string) (map[string]string, error) {
 	match := p.re.FindStringSubmatch(line)
 	if match == nil {
 		return nil, nil
@@ -39,9 +38,6 @@ func (p *plainParser) Parse(line string, data map[string]string) (map[string]str
 	if len(result) == 0 {
 		return nil, nil
 	}
-
-	// Copy existing data into the result
-	maps.Copy(result, data)
 
 	return result, nil
 }
