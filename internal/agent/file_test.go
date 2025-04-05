@@ -273,7 +273,7 @@ func TestFileAgent_Parse(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require.NoError(t, tt.agent.Init(), "Failed to initialize FileAgent")
-			got, err := tt.agent.Parse(tt.line)
+			got, err := tt.agent.Parse(tt.line, nil)
 			if tt.wantErr {
 				require.Error(t, err, "Expected error but got none")
 			} else {

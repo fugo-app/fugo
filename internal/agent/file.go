@@ -3,6 +3,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
 	"regexp"
 )
 
@@ -65,7 +66,7 @@ func (f *FileAgent) Init() error {
 
 // Parse processes a log line based on the configured format (JSON or plain)
 // and returns a map of field names to values extracted from the log line.
-func (f *FileAgent) Parse(line string) (map[string]any, error) {
+func (f *FileAgent) Parse(line string, data map[string]string) (map[string]any, error) {
 	if line == "" {
 		return nil, nil
 	}
@@ -83,6 +84,8 @@ func (f *FileAgent) Parse(line string) (map[string]any, error) {
 	if raw == nil || err != nil {
 		return nil, err
 	}
+
+	maps.Copy(raw, data)
 
 	record := make(map[string]any)
 
