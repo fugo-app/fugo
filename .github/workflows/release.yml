@@ -1,0 +1,54 @@
+name: release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            build-essential \
+            musl-tools \
+            pkg-config \
+            libssl-dev
+
+      - name: Build Fugo
+        env:
+          GOARCH: amd64
+          GOOS: linux
+          CGO_ENABLED: 1
+          CC: /usr/bin/musl-gcc
+        run: |
+          go build \
+            -o fugo-linux-amd64 \
+            -ldflags "-s -w -linkmode external -extldflags -static" \
+            -trimpath \
+            -v \
+            ./cmd/fugo
+
+      - name: Zip
+        run: zip -r fugo-linux-amd64.zip fugo-linux-amd64
+
+      - name: Release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            fugo-linux-amd64.zip
