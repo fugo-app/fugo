@@ -60,6 +60,19 @@ func (f *Field) Init() error {
 	return nil
 }
 
+func (f *Field) Default() any {
+	switch f.Type {
+	case "", "string":
+		return ""
+	case "time", "int":
+		return 0
+	case "float":
+		return 0.0
+	default:
+		return nil
+	}
+}
+
 // Convert converts the field value from the source data.
 func (f *Field) Convert(data map[string]string) (any, error) {
 	if f.template != nil {

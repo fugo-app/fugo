@@ -42,24 +42,22 @@ func (a *Agent) Init() error {
 	return nil
 }
 
-// Convert converts the parsed log data into a map of key-value pairs.
-func (a *Agent) Convert(data map[string]string) (map[string]any, error) {
+// Process receives raw data from source and converts to the logs record.
+func (a *Agent) Process(data map[string]string) {
 	if len(data) == 0 {
-		return nil, nil
+		return
 	}
 
 	result := make(map[string]any)
 
 	for i := range a.Fields {
 		field := &a.Fields[i]
-		if val, err := field.Convert(data); err == nil {
-			if val != nil {
-				result[field.Name] = val
-			}
+		if val, err := field.Convert(data); err == nil && val != nil {
+			result[field.Name] = val
 		} else {
-			return nil, fmt.Errorf("failed to process field %s: %w", field.Name, err)
+			result[field.Name] = field.Default()
 		}
 	}
 
-	return result, nil
+	// TODO: send data to sink
 }
