@@ -34,7 +34,7 @@ func (a *Agent) Init() error {
 	}
 
 	if a.File != nil {
-		if err := a.File.Init(); err != nil {
+		if err := a.File.Init(a); err != nil {
 			return fmt.Errorf("file agent init: %w", err)
 		}
 	}
@@ -44,7 +44,7 @@ func (a *Agent) Init() error {
 
 func (a *Agent) Start() {
 	if a.File != nil {
-		a.File.Start(a)
+		a.File.Start()
 	}
 }
 

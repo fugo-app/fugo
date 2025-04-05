@@ -15,6 +15,10 @@ func (d *dummyParser) Parse(line string) (map[string]string, error) {
 	return map[string]string{"message": line}, nil
 }
 
+type dummyProcessor struct{}
+
+func (d *dummyProcessor) Process(data map[string]string) {}
+
 func TestFileWatcher_WorkerManagement(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
@@ -23,7 +27,9 @@ func TestFileWatcher_WorkerManagement(t *testing.T) {
 
 	// Create a watcher instance
 	path := filepath.Join(tempDir, "(?P<host>.*)\\.log")
-	watcher, err := newFileWatcher(path, &dummyParser{})
+	parser := &dummyParser{}
+	processor := &dummyProcessor{}
+	watcher, err := newFileWatcher(path, parser, processor)
 	require.NoError(t, err, "failed to create watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension
@@ -70,7 +76,9 @@ func TestFileWatcher_MultipleWorkers(t *testing.T) {
 
 	// Create a watcher instance
 	path := filepath.Join(tempDir, "(?P<host>.*)\\.log")
-	watcher, err := newFileWatcher(path, &dummyParser{})
+	parser := &dummyParser{}
+	processor := &dummyProcessor{}
+	watcher, err := newFileWatcher(path, parser, processor)
 	require.NoError(t, err, "failed to create watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension

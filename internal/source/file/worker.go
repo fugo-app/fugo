@@ -8,27 +8,33 @@ import (
 	"maps"
 	"os"
 	"time"
+
+	"github.com/runcitrus/fugo/internal/source"
 )
 
 type fileWorker struct {
-	path string
-	data map[string]string
+	path      string
+	ext       map[string]string
+	parser    fileParser
+	processor source.Processor
 
 	debounce chan struct{}
 	stop     chan struct{}
 }
 
-func newFileWorker(path string, data map[string]string) (*fileWorker, error) {
+func newFileWorker(path string, ext map[string]string, parser fileParser, processor source.Processor) (*fileWorker, error) {
 	return &fileWorker{
-		path:     path,
-		data:     data,
-		debounce: make(chan struct{}, 1),
-		stop:     make(chan struct{}),
+		path:      path,
+		ext:       ext,
+		parser:    parser,
+		processor: processor,
+		debounce:  make(chan struct{}, 1),
+		stop:      make(chan struct{}),
 	}, nil
 }
 
-func (fw *fileWorker) Start(parser fileParser) {
-	go fw.watch(parser)
+func (fw *fileWorker) Start() {
+	go fw.watch()
 }
 
 func (fw *fileWorker) Stop() {
@@ -43,7 +49,7 @@ func (fw *fileWorker) Handle() {
 	}
 }
 
-func (fw *fileWorker) watch(parser fileParser) {
+func (fw *fileWorker) watch() {
 	timer := time.NewTimer(0)
 	if !timer.Stop() {
 		<-timer.C
@@ -65,13 +71,13 @@ func (fw *fileWorker) watch(parser fileParser) {
 			}
 
 		case <-timer.C:
-			fw.tail(parser)
+			fw.tail()
 			timerActive = false
 		}
 	}
 }
 
-func (fw *fileWorker) tail(parser fileParser) {
+func (fw *fileWorker) tail() {
 	file, err := os.Open(fw.path)
 	if err != nil {
 		return
@@ -118,9 +124,9 @@ func (fw *fileWorker) tail(parser fileParser) {
 		if len(line) > 0 {
 			text := string(line)
 
-			if data, err := parser.Parse(text); err == nil {
-				maps.Copy(data, fw.data)
-				// TODO: push to processor
+			if data, err := fw.parser.Parse(text); err == nil {
+				maps.Copy(data, fw.ext)
+				fw.processor.Process(data)
 			}
 		}
 

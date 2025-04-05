@@ -25,7 +25,7 @@ type FileAgent struct {
 	watcher *fileWatcher
 }
 
-func (f *FileAgent) Init() error {
+func (f *FileAgent) Init(processor source.Processor) error {
 	if f.Path == "" {
 		return fmt.Errorf("path is required")
 	}
@@ -57,7 +57,7 @@ func (f *FileAgent) Init() error {
 		return fmt.Errorf("unsupported format: %s", f.Format)
 	}
 
-	if w, err := newFileWatcher(f.Path, parser); err != nil {
+	if w, err := newFileWatcher(f.Path, parser, processor); err != nil {
 		return fmt.Errorf("file watcher: %w", err)
 	} else {
 		f.watcher = w
@@ -66,7 +66,7 @@ func (f *FileAgent) Init() error {
 	return nil
 }
 
-func (f *FileAgent) Start(processor source.Processor) {
+func (f *FileAgent) Start() {
 	f.watcher.Start()
 }
 

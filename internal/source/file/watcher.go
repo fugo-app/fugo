@@ -9,18 +9,21 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
+
+	"github.com/runcitrus/fugo/internal/source"
 )
 
 type fileWatcher struct {
-	dir     string
-	re      *regexp.Regexp
-	parser  fileParser
-	workers map[string]*fileWorker
+	dir       string
+	re        *regexp.Regexp
+	parser    fileParser
+	processor source.Processor
+	workers   map[string]*fileWorker
 
 	stop chan struct{}
 }
 
-func newFileWatcher(path string, parser fileParser) (*fileWatcher, error) {
+func newFileWatcher(path string, parser fileParser, processor source.Processor) (*fileWatcher, error) {
 	if !strings.HasPrefix(path, "/") {
 		return nil, fmt.Errorf("path must be absolute: %s", path)
 	}
@@ -34,11 +37,12 @@ func newFileWatcher(path string, parser fileParser) (*fileWatcher, error) {
 	}
 
 	return &fileWatcher{
-		dir:     dir,
-		re:      re,
-		parser:  parser,
-		workers: make(map[string]*fileWorker),
-		stop:    make(chan struct{}),
+		dir:       dir,
+		re:        re,
+		parser:    parser,
+		processor: processor,
+		workers:   make(map[string]*fileWorker),
+		stop:      make(chan struct{}),
 	}, nil
 }
 
@@ -57,14 +61,14 @@ func (fw *fileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 		data[name] = match[i]
 	}
 
-	worker, err := newFileWorker(path, data)
+	worker, err := newFileWorker(path, data, fw.parser, fw.processor)
 	if err != nil {
 		slog.Error("failed to create worker", "path", path, "error", err)
 		return
 	}
 
 	fw.workers[name] = worker
-	worker.Start(fw.parser)
+	worker.Start()
 	watcher.Add(path)
 }
 
