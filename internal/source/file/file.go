@@ -2,9 +2,11 @@ package file
 
 import (
 	"fmt"
+
+	"github.com/runcitrus/fugo/internal/source"
 )
 
-type FileParser interface {
+type fileParser interface {
 	Parse(line string, data map[string]string) (map[string]string, error)
 }
 
@@ -24,7 +26,8 @@ type FileAgent struct {
 	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
 	Regex string `yaml:"regex,omitempty"`
 
-	parser FileParser
+	parser  fileParser
+	watcher *fileWatcher
 }
 
 func (f *FileAgent) Init() error {
@@ -43,14 +46,14 @@ func (f *FileAgent) Init() error {
 
 		p, err := newPlainParser(f.Regex)
 		if err != nil {
-			return fmt.Errorf("failed to create plain parser: %w", err)
+			return fmt.Errorf("plain parser: %w", err)
 		} else {
 			f.parser = p
 		}
 	} else if f.Format == "json" {
 		p, err := newJsonParser()
 		if err != nil {
-			return fmt.Errorf("failed to create JSON parser: %w", err)
+			return fmt.Errorf("json parser: %w", err)
 		} else {
 			f.parser = p
 		}
@@ -58,5 +61,19 @@ func (f *FileAgent) Init() error {
 		return fmt.Errorf("unsupported format: %s", f.Format)
 	}
 
+	if w, err := newFileWatcher(f.Path); err != nil {
+		return fmt.Errorf("file watcher: %w", err)
+	} else {
+		f.watcher = w
+	}
+
 	return nil
+}
+
+func (f *FileAgent) Start(processor source.Processor) {
+	f.watcher.Start()
+}
+
+func (f *FileAgent) Stop() {
+	f.watcher.Stop()
 }

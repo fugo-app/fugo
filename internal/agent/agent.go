@@ -42,6 +42,18 @@ func (a *Agent) Init() error {
 	return nil
 }
 
+func (a *Agent) Start() {
+	if a.File != nil {
+		a.File.Start(a)
+	}
+}
+
+func (a *Agent) Stop() {
+	if a.File != nil {
+		a.File.Stop()
+	}
+}
+
 // Process receives raw data from source and converts to the logs record.
 func (a *Agent) Process(data map[string]string) {
 	if len(data) == 0 {
