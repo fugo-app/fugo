@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/fsnotify/fsnotify"
 )
@@ -16,6 +17,27 @@ type FileWatcher struct {
 	workers map[string]*FileWorker
 
 	stop chan struct{}
+}
+
+func NewFileWatcher(path string) (*FileWatcher, error) {
+	if !strings.HasPrefix(path, "/") {
+		return nil, fmt.Errorf("path must be absolute: %s", path)
+	}
+
+	dir, pattern := filepath.Split(path)
+
+	pattern = "^" + pattern + "$"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, fmt.Errorf("invalid regex: %w", err)
+	}
+
+	return &FileWatcher{
+		dir:     dir,
+		re:      re,
+		workers: make(map[string]*FileWorker),
+		stop:    make(chan struct{}),
+	}, nil
 }
 
 func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
@@ -103,23 +125,8 @@ func (fw *FileWatcher) watch() {
 
 // Start begins monitoring log files specified by the path pattern.
 // For each matched file, it launches a goroutine that watches for changes.
-func (fw *FileWatcher) Start(path string) error {
-	dir, pattern := filepath.Split(path)
-
-	pattern = "^" + pattern + "$"
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return fmt.Errorf("invalid regex: %w", err)
-	}
-
-	fw.dir = dir
-	fw.re = re
-	fw.workers = make(map[string]*FileWorker)
-
-	fw.stop = make(chan struct{})
+func (fw *FileWatcher) Start() {
 	go fw.watch()
-
-	return nil
 }
 
 // Stop stops monitoring the log files and closes the watcher.
