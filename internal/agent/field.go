@@ -11,15 +11,16 @@ import (
 type Field struct {
 	// Name of the field in the log record.
 	Name string `yaml:"name"`
-	// Template to convert source fields into new record field.
-	Template string `yaml:"template,omitempty"`
 	// Source field name to extract the value from.
 	Source string `yaml:"source,omitempty"`
-	// Time format only for the "time" field.
-	TimeFormat string `yaml:"time_format,omitempty"`
-	// Feild type: "string", "int", "float", "time".
-	// Default: "string" or "time" for field with time_format.
+	// Feild type: "string" (default), "int", "float", "time" (default for field with time_format).
 	Type string `yaml:"type,omitempty"`
+	// Template to convert source fields into new record field.
+	Template string `yaml:"template,omitempty"`
+	// Layout to parse the time string. Only for the "time" field.
+	// Formats: "rfc3339" (default), "common", "unix",
+	// or custom Go layout (e.g. "2006-01-02 15:04:05")
+	TimeFormat string `yaml:"time_format,omitempty"`
 
 	source    string
 	template  *template.Template
@@ -47,6 +48,8 @@ func (f *Field) Init() error {
 	}
 
 	if f.Template != "" {
+		f.Type = "string"
+
 		if tpl, err := template.New(f.Name).Parse(f.Template); err != nil {
 			return fmt.Errorf("failed to parse template %s: %w", f.Name, err)
 		} else {
