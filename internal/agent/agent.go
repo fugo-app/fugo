@@ -1,15 +1,20 @@
 package agent
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/runcitrus/fugo/internal/field"
+	"github.com/runcitrus/fugo/internal/source/file"
+)
 
 type Agent struct {
 	Name string `yaml:"name"`
 
 	// Fields to include in the final log record.
-	Fields []Field `yaml:"fields"`
+	Fields []field.Field `yaml:"fields"`
 
 	// File-based log source.
-	File *FileAgent `yaml:"file,omitempty"`
+	File *file.FileAgent `yaml:"file,omitempty"`
 }
 
 func (a *Agent) Init() error {
