@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"time"
 )
@@ -26,8 +27,8 @@ func newFileWorker(path string, data map[string]string) (*fileWorker, error) {
 	}, nil
 }
 
-func (fw *fileWorker) Start() {
-	go fw.watch()
+func (fw *fileWorker) Start(parser fileParser) {
+	go fw.watch(parser)
 }
 
 func (fw *fileWorker) Stop() {
@@ -42,7 +43,7 @@ func (fw *fileWorker) Handle() {
 	}
 }
 
-func (fw *fileWorker) watch() {
+func (fw *fileWorker) watch(parser fileParser) {
 	timer := time.NewTimer(0)
 	if !timer.Stop() {
 		<-timer.C
@@ -64,13 +65,13 @@ func (fw *fileWorker) watch() {
 			}
 
 		case <-timer.C:
-			fw.tail()
+			fw.tail(parser)
 			timerActive = false
 		}
 	}
 }
 
-func (fw *fileWorker) tail() {
+func (fw *fileWorker) tail(parser fileParser) {
 	file, err := os.Open(fw.path)
 	if err != nil {
 		return
@@ -117,8 +118,10 @@ func (fw *fileWorker) tail() {
 		if len(line) > 0 {
 			text := string(line)
 
-			// TODO: push to parser
-			fmt.Println(text)
+			if data, err := parser.Parse(text); err == nil {
+				maps.Copy(data, fw.data)
+				// TODO: push to processor
+			}
 		}
 
 		if err == io.EOF {

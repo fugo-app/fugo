@@ -6,10 +6,6 @@ import (
 	"github.com/runcitrus/fugo/internal/source"
 )
 
-type fileParser interface {
-	Parse(line string, data map[string]string) (map[string]string, error)
-}
-
 // FileAgent is an implementation of the file-based log agent.
 // It watches log files with inotify for changes and processes new log entries.
 type FileAgent struct {
@@ -26,7 +22,6 @@ type FileAgent struct {
 	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
 	Regex string `yaml:"regex,omitempty"`
 
-	parser  fileParser
 	watcher *fileWatcher
 }
 
@@ -39,6 +34,7 @@ func (f *FileAgent) Init() error {
 		f.Format = "plain"
 	}
 
+	var parser fileParser
 	if f.Format == "plain" {
 		if f.Regex == "" {
 			return fmt.Errorf("regex is required for plain format")
@@ -48,20 +44,20 @@ func (f *FileAgent) Init() error {
 		if err != nil {
 			return fmt.Errorf("plain parser: %w", err)
 		} else {
-			f.parser = p
+			parser = p
 		}
 	} else if f.Format == "json" {
 		p, err := newJsonParser()
 		if err != nil {
 			return fmt.Errorf("json parser: %w", err)
 		} else {
-			f.parser = p
+			parser = p
 		}
 	} else {
 		return fmt.Errorf("unsupported format: %s", f.Format)
 	}
 
-	if w, err := newFileWatcher(f.Path); err != nil {
+	if w, err := newFileWatcher(f.Path, parser); err != nil {
 		return fmt.Errorf("file watcher: %w", err)
 	} else {
 		f.watcher = w

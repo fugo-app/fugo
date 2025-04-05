@@ -14,12 +14,13 @@ import (
 type fileWatcher struct {
 	dir     string
 	re      *regexp.Regexp
+	parser  fileParser
 	workers map[string]*fileWorker
 
 	stop chan struct{}
 }
 
-func newFileWatcher(path string) (*fileWatcher, error) {
+func newFileWatcher(path string, parser fileParser) (*fileWatcher, error) {
 	if !strings.HasPrefix(path, "/") {
 		return nil, fmt.Errorf("path must be absolute: %s", path)
 	}
@@ -35,6 +36,7 @@ func newFileWatcher(path string) (*fileWatcher, error) {
 	return &fileWatcher{
 		dir:     dir,
 		re:      re,
+		parser:  parser,
 		workers: make(map[string]*fileWorker),
 		stop:    make(chan struct{}),
 	}, nil
@@ -62,7 +64,7 @@ func (fw *fileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 	}
 
 	fw.workers[name] = worker
-	worker.Start()
+	worker.Start(fw.parser)
 	watcher.Add(path)
 }
 

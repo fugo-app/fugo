@@ -9,6 +9,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type dummyParser struct{}
+
+func (d *dummyParser) Parse(line string) (map[string]string, error) {
+	return map[string]string{"message": line}, nil
+}
+
 func TestFileWatcher_WorkerManagement(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
@@ -16,7 +22,8 @@ func TestFileWatcher_WorkerManagement(t *testing.T) {
 	var ok bool
 
 	// Create a watcher instance
-	watcher, err := newFileWatcher(filepath.Join(tempDir, "(?P<host>.*)\\.log"))
+	path := filepath.Join(tempDir, "(?P<host>.*)\\.log")
+	watcher, err := newFileWatcher(path, &dummyParser{})
 	require.NoError(t, err, "failed to create watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension
@@ -62,7 +69,8 @@ func TestFileWatcher_MultipleWorkers(t *testing.T) {
 	var ok bool
 
 	// Create a watcher instance
-	watcher, err := newFileWatcher(filepath.Join(tempDir, "(?P<host>.*)\\.log"))
+	path := filepath.Join(tempDir, "(?P<host>.*)\\.log")
+	watcher, err := newFileWatcher(path, &dummyParser{})
 	require.NoError(t, err, "failed to create watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension
