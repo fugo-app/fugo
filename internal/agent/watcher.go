@@ -141,4 +141,8 @@ func (fw *FileWatcher) Stop() {
 	if fw.stop != nil {
 		close(fw.stop)
 	}
+
+	for _, worker := range fw.workers {
+		worker.Stop()
+	}
 }
