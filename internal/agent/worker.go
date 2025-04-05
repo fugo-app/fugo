@@ -6,20 +6,23 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 type FileWorker struct {
 	path string
 	data map[string]string
 
-	stop chan struct{}
+	debounce chan struct{}
+	stop     chan struct{}
 }
 
 func NewFileWorker(path string, data map[string]string) (*FileWorker, error) {
 	return &FileWorker{
-		path: path,
-		data: data,
-		stop: make(chan struct{}),
+		path:     path,
+		data:     data,
+		debounce: make(chan struct{}, 1),
+		stop:     make(chan struct{}),
 	}, nil
 }
 
@@ -31,13 +34,40 @@ func (fw *FileWorker) Stop() {
 	close(fw.stop)
 }
 
+// Handle pushes the task to the debouncer
 func (fw *FileWorker) Handle() {
-	// TODO: push to queue
+	select {
+	case fw.debounce <- struct{}{}:
+	default:
+	}
 }
 
 func (fw *FileWorker) watch() {
-	// TODO: debounce
-	<-fw.stop
+	timer := time.NewTimer(0)
+	if !timer.Stop() {
+		<-timer.C
+	}
+	timerActive := false
+
+	for {
+		select {
+		case <-fw.stop:
+			if timerActive {
+				timer.Stop()
+			}
+			return
+
+		case <-fw.debounce:
+			if !timerActive {
+				timer.Reset(250 * time.Millisecond)
+				timerActive = true
+			}
+
+		case <-timer.C:
+			fw.tail()
+			timerActive = false
+		}
+	}
 }
 
 func (fw *FileWorker) tail() {
