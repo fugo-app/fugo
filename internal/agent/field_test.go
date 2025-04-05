@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestField_Process(t *testing.T) {
+func TestField_Convert(t *testing.T) {
 	tests := []struct {
 		name    string
 		field   Field
@@ -150,7 +150,7 @@ func TestField_Process(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require.NoError(t, tt.field.Init(), "Failed to initialize Field")
 
-			got, err := tt.field.Process(tt.data)
+			got, err := tt.field.Convert(tt.data)
 			if tt.wantErr {
 				require.Error(t, err)
 			} else {

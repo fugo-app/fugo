@@ -36,3 +36,25 @@ func (a *Agent) Init() error {
 
 	return nil
 }
+
+// Convert converts the parsed log data into a map of key-value pairs.
+func (a *Agent) Convert(data map[string]string) (map[string]any, error) {
+	if len(data) == 0 {
+		return nil, nil
+	}
+
+	result := make(map[string]any)
+
+	for i := range a.Fields {
+		field := &a.Fields[i]
+		if val, err := field.Convert(data); err == nil {
+			if val != nil {
+				result[field.Name] = val
+			}
+		} else {
+			return nil, fmt.Errorf("failed to process field %s: %w", field.Name, err)
+		}
+	}
+
+	return result, nil
+}

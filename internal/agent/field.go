@@ -60,7 +60,8 @@ func (f *Field) Init() error {
 	return nil
 }
 
-func (f *Field) Process(data map[string]string) (any, error) {
+// Convert converts the field value from the source data.
+func (f *Field) Convert(data map[string]string) (any, error) {
 	if f.template != nil {
 		var str strings.Builder
 		if err := f.template.Execute(&str, data); err == nil {
