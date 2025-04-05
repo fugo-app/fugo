@@ -17,7 +17,8 @@ type Field struct {
 	Source string `yaml:"source,omitempty"`
 	// Time format only for the "time" field.
 	TimeFormat string `yaml:"time_format,omitempty"`
-	// Feild type: "string", "int", "float". Default: "string"
+	// Feild type: "string", "int", "float", "time".
+	// Default: "string" or "time" for field with time_format.
 	Type string `yaml:"type,omitempty"`
 
 	source    string
@@ -31,7 +32,9 @@ func (f *Field) Init() error {
 		f.source = f.Name
 	}
 
-	if f.Name == "time" {
+	if f.TimeFormat != "" {
+		f.Type = "time"
+
 		f.timestamp = &TimestampFormat{
 			Format: f.TimeFormat,
 		}
@@ -39,6 +42,7 @@ func (f *Field) Init() error {
 		if err := f.timestamp.Init(); err != nil {
 			return fmt.Errorf("failed to initialize timestamp format: %w", err)
 		}
+
 		return nil
 	}
 
@@ -54,14 +58,6 @@ func (f *Field) Init() error {
 }
 
 func (f *Field) Process(data map[string]string) (any, error) {
-	if f.Name == "time" {
-		if t, err := f.timestamp.Convert(data[f.source]); err == nil {
-			return t, nil
-		} else {
-			return nil, fmt.Errorf("failed to convert timestamp: %w", err)
-		}
-	}
-
 	if f.template != nil {
 		var str strings.Builder
 		if err := f.template.Execute(&str, data); err == nil {
@@ -75,6 +71,12 @@ func (f *Field) Process(data map[string]string) (any, error) {
 		switch f.Type {
 		case "", "string":
 			return val, nil
+		case "time":
+			if t, err := f.timestamp.Convert(val); err == nil {
+				return t, nil
+			} else {
+				return nil, fmt.Errorf("failed to convert timestamp: %w", err)
+			}
 		case "int":
 			if val, err := strconv.ParseInt(val, 0, 64); err == nil {
 				return val, nil
