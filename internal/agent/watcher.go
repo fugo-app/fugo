@@ -55,16 +55,23 @@ func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 		data[name] = match[i]
 	}
 
-	worker := NewFileWorker(path, data)
+	worker, err := NewFileWorker(path, data)
+	if err != nil {
+		slog.Error("failed to create worker", "path", path, "error", err)
+		return
+	}
+
 	fw.workers[name] = worker
+	worker.Start()
 	watcher.Add(path)
 }
 
 func (fw *FileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 	name := filepath.Base(path)
 
-	if _, ok := fw.workers[name]; ok {
+	if worker, ok := fw.workers[name]; ok {
 		delete(fw.workers, name)
+		worker.Stop()
 		watcher.Remove(path)
 	}
 }
