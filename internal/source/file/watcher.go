@@ -11,15 +11,15 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-type FileWatcher struct {
+type fileWatcher struct {
 	dir     string
 	re      *regexp.Regexp
-	workers map[string]*FileWorker
+	workers map[string]*fileWorker
 
 	stop chan struct{}
 }
 
-func NewFileWatcher(path string) (*FileWatcher, error) {
+func newFileWatcher(path string) (*fileWatcher, error) {
 	if !strings.HasPrefix(path, "/") {
 		return nil, fmt.Errorf("path must be absolute: %s", path)
 	}
@@ -32,15 +32,15 @@ func NewFileWatcher(path string) (*FileWatcher, error) {
 		return nil, fmt.Errorf("invalid regex: %w", err)
 	}
 
-	return &FileWatcher{
+	return &fileWatcher{
 		dir:     dir,
 		re:      re,
-		workers: make(map[string]*FileWorker),
+		workers: make(map[string]*fileWorker),
 		stop:    make(chan struct{}),
 	}, nil
 }
 
-func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
+func (fw *fileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 	name := filepath.Base(path)
 	match := fw.re.FindStringSubmatch(name)
 	if match == nil {
@@ -55,7 +55,7 @@ func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 		data[name] = match[i]
 	}
 
-	worker, err := NewFileWorker(path, data)
+	worker, err := newFileWorker(path, data)
 	if err != nil {
 		slog.Error("failed to create worker", "path", path, "error", err)
 		return
@@ -66,7 +66,7 @@ func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 	watcher.Add(path)
 }
 
-func (fw *FileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
+func (fw *fileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 	name := filepath.Base(path)
 
 	if worker, ok := fw.workers[name]; ok {
@@ -76,7 +76,7 @@ func (fw *FileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 	}
 }
 
-func (fw *FileWatcher) watch() {
+func (fw *fileWatcher) watch() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		slog.Error("failed to start watcher", "dir", fw.dir, "error", err)
@@ -132,12 +132,12 @@ func (fw *FileWatcher) watch() {
 
 // Start begins monitoring log files specified by the path pattern.
 // For each matched file, it launches a goroutine that watches for changes.
-func (fw *FileWatcher) Start() {
+func (fw *fileWatcher) Start() {
 	go fw.watch()
 }
 
 // Stop stops monitoring the log files and closes the watcher.
-func (fw *FileWatcher) Stop() {
+func (fw *fileWatcher) Stop() {
 	if fw.stop != nil {
 		close(fw.stop)
 	}

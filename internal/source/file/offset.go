@@ -7,7 +7,7 @@ var offsetMutex = &sync.Mutex{}
 
 // TODO: save to storage
 
-func GetOffset(path string) int64 {
+func getOffset(path string) int64 {
 	offsetMutex.Lock()
 	defer offsetMutex.Unlock()
 
@@ -18,7 +18,7 @@ func GetOffset(path string) int64 {
 	return 0
 }
 
-func SetOffset(path string, offset int64) {
+func setOffset(path string, offset int64) {
 	offsetMutex.Lock()
 	defer offsetMutex.Unlock()
 

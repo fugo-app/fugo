@@ -16,7 +16,7 @@ func TestFileWatcher_WorkerManagement(t *testing.T) {
 	var ok bool
 
 	// Create a watcher instance
-	watcher, err := NewFileWatcher(filepath.Join(tempDir, "(?P<host>.*)\\.log"))
+	watcher, err := newFileWatcher(filepath.Join(tempDir, "(?P<host>.*)\\.log"))
 	require.NoError(t, err, "failed to create watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension
@@ -62,7 +62,7 @@ func TestFileWatcher_MultipleWorkers(t *testing.T) {
 	var ok bool
 
 	// Create a watcher instance
-	watcher, err := NewFileWatcher(filepath.Join(tempDir, "(?P<host>.*)\\.log"))
+	watcher, err := newFileWatcher(filepath.Join(tempDir, "(?P<host>.*)\\.log"))
 	require.NoError(t, err, "failed to create watcher")
 
 	// Start the watcher with a pattern that will match files with .log extension

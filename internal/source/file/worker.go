@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type FileWorker struct {
+type fileWorker struct {
 	path string
 	data map[string]string
 
@@ -17,8 +17,8 @@ type FileWorker struct {
 	stop     chan struct{}
 }
 
-func NewFileWorker(path string, data map[string]string) (*FileWorker, error) {
-	return &FileWorker{
+func newFileWorker(path string, data map[string]string) (*fileWorker, error) {
+	return &fileWorker{
 		path:     path,
 		data:     data,
 		debounce: make(chan struct{}, 1),
@@ -26,23 +26,23 @@ func NewFileWorker(path string, data map[string]string) (*FileWorker, error) {
 	}, nil
 }
 
-func (fw *FileWorker) Start() {
+func (fw *fileWorker) Start() {
 	go fw.watch()
 }
 
-func (fw *FileWorker) Stop() {
+func (fw *fileWorker) Stop() {
 	close(fw.stop)
 }
 
 // Handle pushes the task to the debouncer
-func (fw *FileWorker) Handle() {
+func (fw *fileWorker) Handle() {
 	select {
 	case fw.debounce <- struct{}{}:
 	default:
 	}
 }
 
-func (fw *FileWorker) watch() {
+func (fw *fileWorker) watch() {
 	timer := time.NewTimer(0)
 	if !timer.Stop() {
 		<-timer.C
@@ -70,7 +70,7 @@ func (fw *FileWorker) watch() {
 	}
 }
 
-func (fw *FileWorker) tail() {
+func (fw *fileWorker) tail() {
 	file, err := os.Open(fw.path)
 	if err != nil {
 		return
@@ -83,7 +83,7 @@ func (fw *FileWorker) tail() {
 		return
 	}
 
-	offset := GetOffset(fw.path)
+	offset := getOffset(fw.path)
 
 	// Check if file has been truncated (logrotate case)
 	if offset > fileInfo.Size() {
@@ -127,5 +127,5 @@ func (fw *FileWorker) tail() {
 	}
 
 	// Update the offset for next run
-	SetOffset(fw.path, offset)
+	setOffset(fw.path, offset)
 }
