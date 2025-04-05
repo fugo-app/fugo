@@ -56,7 +56,7 @@ A named capture group should be in the file name only and can be used in the fie
 Each field can be defined with:
 
 - `name`: The name of the field in the output
-- `type`: The type of the field (e.g., `int`, `float`, `string`). Default is `string`
 - `source`: The source field to extract (defaults to the field name)
+- `type`: The type of the field (e.g., `int`, `float`, `string`, `time`). Default is `string`, or `time` if `time_format` is specified.
 - `template`: A Go template to transform source fields into the new field
-- `time_format`: Format for the time field (following Go's time format)
+- `time_format`: Format for the time field (e.g., `rfc3339`, `common`, `unix` or a custom Go layout)
