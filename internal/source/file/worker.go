@@ -3,7 +3,6 @@ package file
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"maps"
 	"os"
@@ -22,7 +21,12 @@ type fileWorker struct {
 	stop     chan struct{}
 }
 
-func newFileWorker(path string, ext map[string]string, parser fileParser, processor source.Processor) (*fileWorker, error) {
+func newFileWorker(
+	path string,
+	ext map[string]string,
+	parser fileParser,
+	processor source.Processor,
+) (*fileWorker, error) {
 	return &fileWorker{
 		path:      path,
 		ext:       ext,
@@ -50,6 +54,11 @@ func (fw *fileWorker) Handle() {
 }
 
 func (fw *fileWorker) watch() {
+	// check for new lines
+	fw.tail()
+
+	// Timer to debounce file changes
+	// Wait for 250ms after the first signal before processing
 	timer := time.NewTimer(0)
 	if !timer.Stop() {
 		<-timer.C
@@ -94,7 +103,6 @@ func (fw *fileWorker) tail() {
 
 	// Check if file has been truncated (logrotate case)
 	if offset > fileInfo.Size() {
-		fmt.Printf("File %s has been truncated, resetting offset\n", fw.path)
 		offset = 0
 	}
 
