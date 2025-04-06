@@ -191,3 +191,69 @@ func TestTimestampFormat_Convert_TimeZones(t *testing.T) {
 		})
 	}
 }
+
+func TestTimestampFormat_Convert_WithoutYear(t *testing.T) {
+	tests := []struct {
+		name      string
+		timestamp *TimestampFormat
+		input     string
+		now       time.Time
+		want      int64
+	}{
+		{
+			name: "same year",
+			timestamp: &TimestampFormat{
+				Format: "Jan 02 15:04:05",
+			},
+			input: "Jun 15 12:00:00",
+			now:   time.Date(2023, 6, 15, 12, 0, 0, 0, time.UTC),
+			want:  time.Date(2023, 6, 15, 12, 0, 0, 0, time.UTC).UnixMilli(),
+		},
+		{
+			name: "earlier month same year",
+			timestamp: &TimestampFormat{
+				Format: "Jan 02 15:04:05",
+			},
+			input: "Mar 10 12:00:00",
+			now:   time.Date(2023, 6, 15, 12, 0, 0, 0, time.UTC),
+			want:  time.Date(2023, 3, 10, 12, 0, 0, 0, time.UTC).UnixMilli(),
+		},
+		{
+			name: "later month same year",
+			timestamp: &TimestampFormat{
+				Format: "Jan 02 15:04:05",
+			},
+			input: "Oct 20 12:00:00",
+			now:   time.Date(2023, 6, 15, 12, 0, 0, 0, time.UTC),
+			want:  time.Date(2023, 10, 20, 12, 0, 0, 0, time.UTC).UnixMilli(),
+		},
+		{
+			name: "New Year edge case",
+			timestamp: &TimestampFormat{
+				Format: "Jan 02 15:04:05",
+			},
+			input: "Dec 31 23:59:59",
+			now:   time.Date(2023, 1, 2, 12, 0, 0, 0, time.UTC),
+			want:  time.Date(2022, 12, 31, 23, 59, 59, 0, time.UTC).UnixMilli(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Initialize timestamp
+			require.NoError(t, tt.timestamp.Init(), "Failed to initialize timestamp format")
+
+			// Convert the timestamp
+			stdTimeNow = func() time.Time {
+				return tt.now
+			}
+			defer func() {
+				stdTimeNow = time.Now
+			}()
+			result, err := tt.timestamp.Convert(tt.input)
+			require.NoError(t, err, "Failed to convert timestamp")
+
+			require.Equal(t, tt.want, result, "Unexpected result for timestamp conversion")
+		})
+	}
+}

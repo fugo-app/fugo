@@ -19,6 +19,8 @@ type TimestampFormat struct {
 	layout string
 }
 
+var stdTimeNow = time.Now
+
 // Init initializes the TimestampFormat by converting the Format field
 // to the corresponding Go time layout format stored in layout.
 func (t *TimestampFormat) Init() error {
@@ -52,6 +54,19 @@ func (t *TimestampFormat) Convert(source string) (int64, error) {
 	parsedTime, err := time.Parse(t.layout, source)
 	if err != nil {
 		return 0, fmt.Errorf("invalid timestamp '%s' (%s): %w", source, t.Format, err)
+	}
+
+	if parsedTime.Year() == 0 {
+		now := stdTimeNow()
+
+		// Handle new year case
+		if parsedTime.Month() == 12 && now.Month() == 1 {
+			year := now.Year() - 1
+			parsedTime = parsedTime.AddDate(year, 0, 0)
+		} else {
+			year := now.Year()
+			parsedTime = parsedTime.AddDate(year, 0, 0)
+		}
 	}
 
 	return parsedTime.UnixMilli(), nil
