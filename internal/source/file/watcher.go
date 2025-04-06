@@ -2,7 +2,7 @@ package file
 
 import (
 	"fmt"
-	"log/slog"
+	"log"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -122,7 +122,7 @@ func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 
 	worker, err := newFileWorker(path, data, fw.parser, fw.processor)
 	if err != nil {
-		slog.Error("failed to create worker", "path", path, "error", err)
+		log.Printf("failed to create worker (%s): %v", path, err)
 		return
 	}
 
@@ -144,14 +144,14 @@ func (fw *FileWatcher) stopWorker(path string, watcher *fsnotify.Watcher) {
 func (fw *FileWatcher) watch() {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		slog.Error("failed to start watcher", "dir", fw.dir, "error", err)
+		log.Printf("failed to start watcher (%s): %v", fw.dir, err)
 		return
 	}
 	defer watcher.Close()
 
 	entries, err := os.ReadDir(fw.dir)
 	if err != nil {
-		slog.Error("failed to read directory", "dir", fw.dir, "error", err)
+		log.Printf("failed to read directory (%s): %v", fw.dir, err)
 		return
 	}
 

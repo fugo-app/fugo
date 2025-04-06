@@ -1,6 +1,7 @@
 package agent
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/runcitrus/fugo/internal/field"
@@ -8,8 +9,6 @@ import (
 )
 
 type Agent struct {
-	Name string `yaml:"name"`
-
 	// Fields to include in the final log record.
 	Fields []field.Field `yaml:"fields"`
 
@@ -18,10 +17,6 @@ type Agent struct {
 }
 
 func (a *Agent) Init() error {
-	if a.Name == "" {
-		return fmt.Errorf("name is required")
-	}
-
 	if len(a.Fields) == 0 {
 		return fmt.Errorf("fields are required")
 	}
@@ -70,6 +65,9 @@ func (a *Agent) Process(data map[string]string) {
 			result[field.Name] = field.Default()
 		}
 	}
+
+	line, _ := json.Marshal(result)
+	fmt.Println(string(line))
 
 	// TODO: send data to sink
 }
