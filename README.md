@@ -12,7 +12,8 @@ File `/etc/fugo/agents/nginx-access.yml`:
 ```yaml
 fields:
   - name: time
-    time_format: common
+    timestamp:
+      format: common
   - name: status
     type: int
   - name: message
@@ -28,7 +29,8 @@ File `/etc/fugo/agents/nginx-error.yml`:
 ```yaml
 fields:
   - name: time
-    time_format: '2006/01/02 15:04:05'
+    timestamp:
+      format: '2006/01/02 15:04:05'
   - name: level
   - name: message
 file:
@@ -47,9 +49,13 @@ Each field can be defined with:
 
 - `name`: The name of the field in the output
 - `source`: The source field to extract (defaults to the field name)
-- `type`: The type of the field (e.g., `int`, `float`, `string`, `time`). Default is `string`, or `time` if `time_format` is specified.
+- `type`: The type of the field (e.g., `int`, `float`, `string`, `time`). Default is `string`, or `time` if `timestamp` is specified.
 - `template`: A Go template to transform source fields into the new field
-- `time_format`: Format for the time field (e.g., `rfc3339`, `common`, `unix` or a custom Go layout)
+- `timestamp`: Configuration for timestamp parsing
+
+### Timestamp Configuration
+
+- `format`: Format for the time field (e.g., `rfc3339`, `common`, `unix` or a custom Go layout)
 
 ## File-based Input
 

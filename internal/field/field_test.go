@@ -17,8 +17,10 @@ func TestField_Convert(t *testing.T) {
 		{
 			name: "process time field",
 			field: Field{
-				Name:       "time",
-				TimeFormat: "2006-01-02 15:04:05",
+				Name: "time",
+				Timestamp: &TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
 			},
 			data: map[string]string{
 				"time": "2023-01-01 12:00:00",
@@ -29,9 +31,11 @@ func TestField_Convert(t *testing.T) {
 		{
 			name: "process time field with source",
 			field: Field{
-				Name:       "time",
-				Source:     "timestamp",
-				TimeFormat: "2006-01-02 15:04:05",
+				Name:   "time",
+				Source: "timestamp",
+				Timestamp: &TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
 			},
 			data: map[string]string{
 				"timestamp": "2023-01-01 12:00:00",
@@ -42,8 +46,10 @@ func TestField_Convert(t *testing.T) {
 		{
 			name: "process time field with invalid timestamp",
 			field: Field{
-				Name:       "time",
-				TimeFormat: "2006-01-02 15:04:05",
+				Name: "time",
+				Timestamp: &TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
 			},
 			data: map[string]string{
 				"time": "invalid-timestamp",

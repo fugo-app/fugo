@@ -18,13 +18,10 @@ type Field struct {
 	// Template to convert source fields into new record field.
 	Template string `yaml:"template,omitempty"`
 	// Layout to parse the time string. Only for the "time" field.
-	// Formats: "rfc3339" (default), "common", "unix",
-	// or custom Go layout (e.g. "2006-01-02 15:04:05")
-	TimeFormat string `yaml:"time_format,omitempty"`
+	Timestamp *TimestampFormat `yaml:"timestamp,omitempty"`
 
-	source    string
-	template  *template.Template
-	timestamp *TimestampFormat
+	source   string
+	template *template.Template
 }
 
 func (f *Field) Init() error {
@@ -33,15 +30,11 @@ func (f *Field) Init() error {
 		f.source = f.Name
 	}
 
-	if f.TimeFormat != "" {
+	if f.Timestamp != nil {
 		f.Type = "time"
 
-		f.timestamp = &TimestampFormat{
-			Format: f.TimeFormat,
-		}
-
-		if err := f.timestamp.Init(); err != nil {
-			return fmt.Errorf("failed to initialize timestamp format: %w", err)
+		if err := f.Timestamp.Init(); err != nil {
+			return fmt.Errorf("invalid timestamp format: %w", err)
 		}
 
 		return nil
@@ -89,7 +82,7 @@ func (f *Field) Convert(data map[string]string) (any, error) {
 		case "", "string":
 			return val, nil
 		case "time":
-			if t, err := f.timestamp.Convert(val); err == nil {
+			if t, err := f.Timestamp.Convert(val); err == nil {
 				return t, nil
 			} else {
 				return nil, fmt.Errorf("failed to convert timestamp: %w", err)
