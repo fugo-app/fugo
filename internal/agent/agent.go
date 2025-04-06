@@ -9,6 +9,8 @@ import (
 )
 
 type Agent struct {
+	name string
+
 	// Fields to include in the final log record.
 	Fields []field.Field `yaml:"fields"`
 
@@ -16,7 +18,12 @@ type Agent struct {
 	File *file.FileWatcher `yaml:"file,omitempty"`
 }
 
-func (a *Agent) Init() error {
+func (a *Agent) Init(name string) error {
+	if name == "" {
+		return fmt.Errorf("name is required")
+	}
+	a.name = name
+
 	if len(a.Fields) == 0 {
 		return fmt.Errorf("fields are required")
 	}
@@ -67,7 +74,7 @@ func (a *Agent) Process(data map[string]string) {
 	}
 
 	line, _ := json.Marshal(result)
-	fmt.Println(string(line))
+	fmt.Println(a.name, string(line))
 
 	// TODO: send data to sink
 }
