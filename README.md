@@ -4,32 +4,37 @@ A flexible log parsing and processing agent for various log formats.
 
 ## Configuration
 
-Fugo uses YAML configuration files to define agents and their behavior:
+Fugo uses YAML configuration files to define agents and their behavior.
+Agents configuration located in the `agents` directory. Each agent is defined in its own YAML file.
+
+File `/etc/fugo/agents/nginx-access.yml`:
 
 ```yaml
-agents:
-  - name: nginx-access
-    fields:
-      - name: time
-        time_format: common
-      - name: status
-        type: int
-      - name: message
-        template: "{{.method}} {{.path}}"
-    file:
-      path: /var/log/nginx/access.log
-      format: plain
-      regex: '^(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+)'
-  - name: nginx-error
-    fields:
-      - name: time
-        time_format: '2006/01/02 15:04:05'
-      - name: level
-      - name: message
-    file:
-      path: /var/log/nginx/error.log
-      format: plain
-      regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
+fields:
+  - name: time
+    time_format: common
+  - name: status
+    type: int
+  - name: message
+    template: "{{.method}} {{.path}}"
+file:
+  path: /var/log/nginx/access.log
+  format: plain
+  regex: '^(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+)'
+```
+
+File `/etc/fugo/agents/nginx-error.yml`:
+
+```yaml
+fields:
+  - name: time
+    time_format: '2006/01/02 15:04:05'
+  - name: level
+  - name: message
+file:
+  path: /var/log/nginx/error.log
+  format: plain
+  regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
 ```
 
 - `name`: The name of the agent

@@ -29,6 +29,8 @@ func (a *appInstance) loadAgents(configPath string) error {
 		return err
 	}
 
+	a.Agents = make(map[string]*agent.Agent)
+
 	for _, entry := range entries {
 		if !entry.Type().IsRegular() {
 			continue
