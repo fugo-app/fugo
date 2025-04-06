@@ -112,9 +112,7 @@ func (t *timestampConverter) Default() any {
 
 func (t *timestampConverter) Convert(data map[string]string) (any, error) {
 	if val, ok := data[t.source]; ok {
-		if t.timestamp != nil {
-			return t.timestamp.Convert(val)
-		}
+		return t.timestamp.Convert(val)
 	}
 
 	return nil, nil
@@ -132,6 +130,7 @@ func (s *stringConverter) Convert(data map[string]string) (any, error) {
 	if val, ok := data[s.source]; ok {
 		return val, nil
 	}
+
 	return nil, nil
 }
 
