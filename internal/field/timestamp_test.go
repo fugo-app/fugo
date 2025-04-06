@@ -7,48 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTimestampFormat_Init(t *testing.T) {
-	tests := []struct {
-		name       string
-		timestamp  *TimestampFormat
-		wantLayout string
-	}{
-		{
-			name:       "default format",
-			timestamp:  &TimestampFormat{},
-			wantLayout: time.RFC3339,
-		},
-		{
-			name: "rfc3339 format",
-			timestamp: &TimestampFormat{
-				Format: "rfc3339",
-			},
-			wantLayout: time.RFC3339,
-		},
-		{
-			name: "unix format",
-			timestamp: &TimestampFormat{
-				Format: "unix",
-			},
-			wantLayout: "unix",
-		},
-		{
-			name: "custom format",
-			timestamp: &TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-			wantLayout: "2006-01-02 15:04:05",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.NoError(t, tt.timestamp.Init(), "Failed to initialize timestamp format")
-			require.Equal(t, tt.wantLayout, tt.timestamp.layout, "Unexpected layout after initialization")
-		})
-	}
-}
-
 func TestTimestampFormat_Convert(t *testing.T) {
 	tests := []struct {
 		name      string

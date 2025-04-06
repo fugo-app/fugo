@@ -67,40 +67,40 @@ func (f *Field) Default() any {
 }
 
 // Convert converts the field value from the source data.
-func (f *Field) Convert(data map[string]string) (any, error) {
+func (f *Field) Convert(data map[string]string) any {
 	if f.template != nil {
 		var str strings.Builder
 		if err := f.template.Execute(&str, data); err == nil {
-			return str.String(), nil
+			return str.String()
 		} else {
-			return nil, nil
+			return nil
 		}
 	}
 
 	if val, ok := data[f.source]; ok {
 		switch f.Type {
 		case "", "string":
-			return val, nil
+			return val
 		case "time":
 			if t, err := f.Timestamp.Convert(val); err == nil {
-				return t, nil
+				return t
 			} else {
-				return nil, fmt.Errorf("failed to convert timestamp: %w", err)
+				return nil
 			}
 		case "int":
 			if val, err := strconv.ParseInt(val, 0, 64); err == nil {
-				return val, nil
+				return val
 			} else {
-				return nil, nil
+				return nil
 			}
 		case "float":
 			if val, err := strconv.ParseFloat(val, 64); err == nil {
-				return val, nil
+				return val
 			} else {
-				return nil, nil
+				return nil
 			}
 		}
 	}
 
-	return nil, nil
+	return nil
 }

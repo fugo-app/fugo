@@ -66,7 +66,7 @@ func (a *Agent) Process(data map[string]string) {
 
 	for i := range a.Fields {
 		field := &a.Fields[i]
-		if val, err := field.Convert(data); err == nil && val != nil {
+		if val := field.Convert(data); val != nil {
 			result[field.Name] = val
 		} else {
 			result[field.Name] = field.Default()

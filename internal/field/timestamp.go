@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+var stdTimeNow = time.Now
+
+type timeParser interface {
+	Parse(string) (int64, error)
+}
+
 // TimestampFormat defines how to parse timestamps in log lines.
 // Returns time in RFC3339 format with milliseconds.
 type TimestampFormat struct {
@@ -16,10 +22,8 @@ type TimestampFormat struct {
 	Format string `yaml:"format,omitempty"`
 
 	// Go time layout used in time.Parse
-	layout string
+	parser timeParser
 }
-
-var stdTimeNow = time.Now
 
 // Init initializes the TimestampFormat by converting the Format field
 // to the corresponding Go time layout format stored in layout.
@@ -27,16 +31,26 @@ func (t *TimestampFormat) Init() error {
 	// Convert named formats to Go time layout format
 	switch t.Format {
 	case "", "rfc3339":
-		t.layout = time.RFC3339
+		t.parser = &stdTimeParser{
+			layout: time.RFC3339,
+		}
 	case "common":
 		// Common log format used by web servers
-		t.layout = "02/Jan/2006:15:04:05 -0700"
+		t.parser = &stdTimeParser{
+			layout: "02/Jan/2006:15:04:05 -0700",
+		}
+	case "stamp":
+		t.parser = &stdTimeParser{
+			layout: time.Stamp,
+		}
 	case "unix":
 		// Unix timestamp doesn't need a layout as it will be parsed differently
-		t.layout = "unix"
+		t.parser = &unixTimeParser{}
 	default:
 		// Assume Format is already in Go's time layout syntax
-		t.layout = t.Format
+		t.parser = &stdTimeParser{
+			layout: t.Format,
+		}
 	}
 
 	return nil
@@ -45,15 +59,17 @@ func (t *TimestampFormat) Init() error {
 // Convert processes a log record and converts the timestamp field specified by Source
 // to unix timestamp format with millisecond precision.
 func (t *TimestampFormat) Convert(source string) (int64, error) {
-	// Parse the timestamp based on the configured format
-	if t.layout == "unix" {
-		return convertUnix(source)
-	}
+	return t.parser.Parse(source)
+}
 
-	// Parse using the configured layout
-	parsedTime, err := time.Parse(t.layout, source)
+type stdTimeParser struct {
+	layout string
+}
+
+func (p *stdTimeParser) Parse(source string) (int64, error) {
+	parsedTime, err := time.Parse(p.layout, source)
 	if err != nil {
-		return 0, fmt.Errorf("invalid timestamp '%s' (%s): %w", source, t.Format, err)
+		return 0, fmt.Errorf("invalid timestamp '%s' (%s): %w", source, p.layout, err)
 	}
 
 	if parsedTime.Year() == 0 {
@@ -72,7 +88,9 @@ func (t *TimestampFormat) Convert(source string) (int64, error) {
 	return parsedTime.UnixMilli(), nil
 }
 
-func convertUnix(source string) (int64, error) {
+type unixTimeParser struct{}
+
+func (unixTimeParser) Parse(source string) (int64, error) {
 	sec, frac, ok := strings.Cut(source, ".")
 	seconds, err := strconv.ParseInt(sec, 10, 64)
 	if err != nil {

@@ -25,8 +25,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"time": "2023-01-01 12:00:00",
 			},
-			want:    int64(1672574400000),
-			wantErr: false,
+			want: int64(1672574400000),
 		},
 		{
 			name: "process time field with source",
@@ -40,8 +39,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"timestamp": "2023-01-01 12:00:00",
 			},
-			want:    int64(1672574400000),
-			wantErr: false,
+			want: int64(1672574400000),
 		},
 		{
 			name: "process time field with invalid timestamp",
@@ -54,8 +52,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"time": "invalid-timestamp",
 			},
-			want:    nil,
-			wantErr: true,
+			want: nil,
 		},
 		{
 			name: "process field with template",
@@ -67,8 +64,7 @@ func TestField_Convert(t *testing.T) {
 				"level":   "INFO",
 				"message": "Test message",
 			},
-			want:    "INFO: Test message",
-			wantErr: false,
+			want: "INFO: Test message",
 		},
 		{
 			name: "process string field",
@@ -78,8 +74,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"message": "Test message",
 			},
-			want:    "Test message",
-			wantErr: false,
+			want: "Test message",
 		},
 		{
 			name: "process string field with source",
@@ -90,8 +85,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"message": "Test message",
 			},
-			want:    "Test message",
-			wantErr: false,
+			want: "Test message",
 		},
 		{
 			name: "process int field",
@@ -102,8 +96,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"count": "123",
 			},
-			want:    int64(123),
-			wantErr: false,
+			want: int64(123),
 		},
 		{
 			name: "process float field",
@@ -114,17 +107,15 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"value": "123.456",
 			},
-			want:    float64(123.456),
-			wantErr: false,
+			want: float64(123.456),
 		},
 		{
 			name: "process missing field",
 			field: Field{
 				Name: "missing",
 			},
-			data:    map[string]string{},
-			want:    nil,
-			wantErr: false,
+			data: map[string]string{},
+			want: nil,
 		},
 		{
 			name: "process invalid int",
@@ -135,8 +126,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"count": "not-a-number",
 			},
-			want:    nil,
-			wantErr: false,
+			want: nil,
 		},
 		{
 			name: "process invalid float",
@@ -147,8 +137,7 @@ func TestField_Convert(t *testing.T) {
 			data: map[string]string{
 				"value": "not-a-number",
 			},
-			want:    nil,
-			wantErr: false,
+			want: nil,
 		},
 	}
 
@@ -156,13 +145,8 @@ func TestField_Convert(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require.NoError(t, tt.field.Init(), "Failed to initialize Field")
 
-			got, err := tt.field.Convert(tt.data)
-			if tt.wantErr {
-				require.Error(t, err)
-			} else {
-				require.NoError(t, err)
-				require.Equal(t, tt.want, got)
-			}
+			got := tt.field.Convert(tt.data)
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
