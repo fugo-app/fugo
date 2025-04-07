@@ -18,7 +18,7 @@ func TestAgent_CreateTable(t *testing.T) {
 
 	agent := &Agent{
 		name: "test_agent",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -47,7 +47,7 @@ func TestAgent_MigrateAddColumn(t *testing.T) {
 	// Create initial agent with some fields
 	initialAgent := &Agent{
 		name: "test_migration",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -67,7 +67,7 @@ func TestAgent_MigrateAddColumn(t *testing.T) {
 	// Create updated agent with additional fields
 	updatedAgent := &Agent{
 		name: "test_migration",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -96,7 +96,7 @@ func TestAgent_MigrateRemoveColumn(t *testing.T) {
 	// Create initial agent with some fields
 	initialAgent := &Agent{
 		name: "test_removal",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -118,7 +118,7 @@ func TestAgent_MigrateRemoveColumn(t *testing.T) {
 	// Create updated agent with fewer fields
 	updatedAgent := &Agent{
 		name: "test_removal",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -146,7 +146,7 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 	// Create initial agent with some fields
 	initialAgent := &Agent{
 		name: "test_type_change",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -167,7 +167,7 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 	// Create updated agent with changed column types
 	updatedAgent := &Agent{
 		name: "test_type_change",
-		Fields: []field.Field{
+		Fields: []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
