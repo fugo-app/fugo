@@ -61,6 +61,9 @@ func getColumns(db *sql.DB, name string) (map[string]string, error) {
 
 func createTable(db *sql.DB, name string, fields []*field.Field) error {
 	var columns []string
+
+	columns = append(columns, "`_cursor` INTEGER PRIMARY KEY AUTOINCREMENT")
+
 	for _, f := range fields {
 		fieldType := getSqlType(f.Type)
 		columns = append(columns, fmt.Sprintf("`%s` %s", f.Name, fieldType))
@@ -76,6 +79,13 @@ func migrateTable(db *sql.DB, name string, fields []*field.Field) error {
 	currentColumns, err := getColumns(db, name)
 	if err != nil {
 		return fmt.Errorf("get columns: %w", err)
+	}
+
+	// Ignore internal columns
+	for currentName, _ := range currentColumns {
+		if strings.HasPrefix(currentName, "_") {
+			delete(currentColumns, currentName)
+		}
 	}
 
 	desiredColumns := make(map[string]string)
