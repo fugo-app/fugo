@@ -2,6 +2,7 @@ package field
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -29,6 +30,10 @@ type Field struct {
 }
 
 func (f *Field) Init() error {
+	if !regexp.MustCompile(`^[a-z][a-z0-9_]*$`).MatchString(f.Name) {
+		return fmt.Errorf("invalid field name '%s'", f.Name)
+	}
+
 	source := f.Source
 	if source == "" {
 		source = f.Name
