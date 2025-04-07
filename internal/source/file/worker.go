@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/runcitrus/fugo/internal/source"
+	"github.com/fugo-app/fugo/internal/source"
 )
 
 type fileWorker struct {

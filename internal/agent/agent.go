@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/runcitrus/fugo/internal/field"
-	"github.com/runcitrus/fugo/internal/source/file"
+	"github.com/fugo-app/fugo/internal/field"
+	"github.com/fugo-app/fugo/internal/source/file"
 )
 
 type Agent struct {

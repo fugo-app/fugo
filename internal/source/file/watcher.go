@@ -9,7 +9,8 @@ import (
 	"strings"
 
 	"github.com/fsnotify/fsnotify"
-	"github.com/runcitrus/fugo/internal/source"
+
+	"github.com/fugo-app/fugo/internal/source"
 )
 
 // FileWatcher is an implementation of the file-based log agent.

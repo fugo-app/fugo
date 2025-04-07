@@ -1,4 +1,4 @@
-module github.com/runcitrus/fugo
+module github.com/fugo-app/fugo
 
 go 1.24
 
