@@ -1,6 +1,6 @@
 # Fugo
 
-A flexible log parsing and processing agent for various log formats.
+A flexible logs parsing and processing agent.
 
 ## Configuration
 
