@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,15 @@ import (
 type SQLiteSink struct {
 	Path string `yaml:"path"`
 
+	// Default: "wal"
+	JournalMode string `yaml:"journal_mode,omitempty"`
+
+	// Default: "normal"
+	Synchronous string `yaml:"synchronous,omitempty"`
+
+	// Default: 10000
+	CacheSize int `yaml:"cache_size,omitempty"`
+
 	db          *sql.DB
 	insertQueue chan *insertQueueItem
 	stop        chan struct{}
@@ -27,15 +37,41 @@ type insertQueueItem struct {
 }
 
 func (ss *SQLiteSink) Open() error {
+	sourceName := ss.Path
+
 	// Create parent directory if it doesn't exist
-	if !strings.HasPrefix(ss.Path, ":") {
-		dir := filepath.Dir(ss.Path)
+	if !strings.HasPrefix(sourceName, ":") {
+		// Remove SQLite query parameters
+		dir := filepath.Dir(sourceName)
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("create directory for sqlite database: %w", err)
 		}
+
+		params := url.Values{}
+		params.Set("_foreign_keys", "off")
+
+		journalMode := ss.JournalMode
+		if journalMode == "" {
+			journalMode = "wal"
+		}
+		params.Set("_journal_mode", journalMode)
+
+		synchronous := ss.Synchronous
+		if synchronous == "" {
+			synchronous = "normal"
+		}
+		params.Set("_synchronous", synchronous)
+
+		cacheSize := ss.CacheSize
+		if cacheSize == 0 {
+			cacheSize = 10000
+		}
+		params.Set("_cache_size", fmt.Sprintf("%d", cacheSize))
+
+		sourceName = fmt.Sprintf("%s?%s", sourceName, params.Encode())
 	}
 
-	db, err := sql.Open("sqlite3", ss.Path)
+	db, err := sql.Open("sqlite3", sourceName)
 	if err != nil {
 		return fmt.Errorf("open sqlite database: %w", err)
 	}

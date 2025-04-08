@@ -4,10 +4,25 @@ A flexible logs parsing and processing agent.
 
 ## Configuration
 
-Fugo uses YAML configuration files to define agents and their behavior.
-Agents configuration located in the `agents` directory. Each agent is defined in its own YAML file.
+Fugo uses YAML configuration files. The main configuration file is located at `/etc/fugo/config.yaml`.
 
-File `/etc/fugo/agents/nginx-access.yml`:
+```yaml
+sink:
+  sqlite:
+    path: /var/lib/fugo/fugo.db
+```
+
+Options for SQLite sink:
+- `path`: Path to the SQLite database file. If the file does not exist, it will be created.
+- `journal_mode`: SQLite journal mode. Default is `wal`. Other options are `delete`, `truncate`, `persist`, `memory`, and `off`.
+- `synchronous`: SQLite synchronous mode. Default is `normal`. Other options are `full`, `off`, and `extra`.
+- `cache_size`: SQLite cache size in pages. Default is `10000` pages. Use negative values for kibibytes.
+
+## Agents Configuration
+
+Agents configuration located in the `agents` sub-directory (e.g. `/etc/fugo/agents/nginx-access.yaml`). Each agent is defined in its own YAML file.
+
+Example, configuration for nginx access log `/etc/fugo/agents/nginx-access.yaml`:
 
 ```yaml
 fields:
@@ -24,7 +39,7 @@ file:
   regex: '^(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+)'
 ```
 
-File `/etc/fugo/agents/nginx-error.yml`:
+Example, configuration for nginx error log `/etc/fugo/agents/nginx-error.yaml`:
 
 ```yaml
 fields:
