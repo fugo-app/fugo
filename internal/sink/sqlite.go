@@ -14,8 +14,14 @@ import (
 type SQLiteSink struct {
 	Path string `yaml:"path"`
 
-	db   *sql.DB
-	stop chan struct{}
+	db          *sql.DB
+	insertQueue chan *insertQueueItem
+	stop        chan struct{}
+}
+
+type insertQueueItem struct {
+	name string
+	data map[string]any
 }
 
 func (ss *SQLiteSink) Open() error {
@@ -25,6 +31,7 @@ func (ss *SQLiteSink) Open() error {
 	}
 	ss.db = db
 
+	ss.insertQueue = make(chan *insertQueueItem, 256)
 	ss.stop = make(chan struct{})
 	go ss.watch()
 
@@ -55,6 +62,11 @@ func (ss *SQLiteSink) Migrate(name string, fields []*field.Field) error {
 		}
 	}
 
+	return nil
+}
+
+func (ss *SQLiteSink) Write(name string, data map[string]any) error {
+	ss.insertQueue <- &insertQueueItem{name, data}
 	return nil
 }
 
@@ -178,6 +190,37 @@ func (ss *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
 	return nil
 }
 
+func (ss *SQLiteSink) insertData(name string, data map[string]any) error {
+	columns := []string{}
+	placeholders := []string{}
+	values := []any{}
+
+	for col, val := range data {
+		columns = append(columns, fmt.Sprintf("`%s`", col)) // экранируем имя столбца
+		placeholders = append(placeholders, "?")
+		values = append(values, val)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO `%s` (%s) VALUES (%s)",
+		name,
+		strings.Join(columns, ", "),
+		strings.Join(placeholders, ", "),
+	)
+
+	_, err := ss.db.Exec(query, values...)
+	return err
+}
+
 func (ss *SQLiteSink) watch() {
-	<-ss.stop
+	for {
+		select {
+		case <-ss.stop:
+			return
+		case item := <-ss.insertQueue:
+			if err := ss.insertData(item.name, item.data); err != nil {
+				log.Printf("failed to insert log record into sqlite sink: %v", err)
+			}
+		}
+	}
 }
