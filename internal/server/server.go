@@ -74,7 +74,7 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 	// Get query parameters from URL
 	queryParams := r.URL.Query()
 
-	storageQuery := storage.Query{}
+	query := storage.Query{}
 
 	// Iterate through query parameters
 	for key, values := range queryParams {
@@ -84,11 +84,10 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 		if !ok {
 			switch key {
 			case "name":
-				storageQuery.Name = value
+				query.SetName(value)
 			case "limit":
 				if v, err := strconv.ParseInt(value, 10, 64); err == nil {
-					storageQuery.Limit.Int64 = v
-					storageQuery.Limit.Valid = true
+					query.SetLimit(v)
 				} else {
 					w.WriteHeader(http.StatusBadRequest)
 					fmt.Fprintln(w, "Invalid limit value")
@@ -97,8 +96,7 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 			case "after":
 				// zero-padded hex value for cursor
 				if v, err := strconv.ParseInt(value, 16, 64); err == nil {
-					storageQuery.After.Int64 = v
-					storageQuery.After.Valid = true
+					query.SetAfter(v)
 				} else {
 					w.WriteHeader(http.StatusBadRequest)
 					fmt.Fprintln(w, "Invalid after value")
@@ -107,8 +105,7 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 			case "before":
 				// zero-padded hex value for cursor
 				if v, err := strconv.ParseInt(value, 16, 64); err == nil {
-					storageQuery.Before.Int64 = v
-					storageQuery.Before.Valid = true
+					query.SetBefore(v)
 				} else {
 					w.WriteHeader(http.StatusBadRequest)
 					fmt.Fprintln(w, "Invalid before value")
@@ -116,7 +113,7 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
-			if err := storageQuery.NewQueryOperator(key, op, value); err != nil {
+			if err := query.SetFilter(key, op, value); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				fmt.Fprintln(w, "Invalid filter operator for key", key)
 				return
