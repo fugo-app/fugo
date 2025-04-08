@@ -34,6 +34,10 @@ func (f *Field) Init() error {
 		return fmt.Errorf("invalid field name '%s'", f.Name)
 	}
 
+	if strings.Contains(f.Name, "__") {
+		return fmt.Errorf("invalid field name '%s': double underscore is not allowed", f.Name)
+	}
+
 	source := f.Source
 	if source == "" {
 		source = f.Name
