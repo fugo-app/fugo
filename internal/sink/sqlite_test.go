@@ -1,4 +1,4 @@
-package agent
+package sink
 
 import (
 	"database/sql"
@@ -14,6 +14,8 @@ func Test_createTable(t *testing.T) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(t, err)
 	defer db.Close()
+
+	sink := &SQLiteSink{db}
 
 	name := "test_agent"
 	fields := []*field.Field{
@@ -34,17 +36,17 @@ func Test_createTable(t *testing.T) {
 	}
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, createTable(db, name, fields), "Failed to create table")
+		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
 	})
 
 	t.Run("check table exists", func(t *testing.T) {
-		exists, err := checkTable(db, name)
+		exists, err := sink.checkTable(name)
 		require.NoError(t, err, "Failed to check if table exists")
 		require.True(t, exists, "Table should exist after creation")
 	})
 
 	t.Run("check table structure", func(t *testing.T) {
-		columns, err := getColumns(db, name)
+		columns, err := sink.getColumns(name)
 		require.NoError(t, err, "Failed to get table columns")
 
 		expectedColumns := map[string]string{
@@ -91,6 +93,8 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
+	sink := &SQLiteSink{db}
+
 	// Create initial agent with some fields
 	name := "test_migration"
 	fields1 := []*field.Field{
@@ -109,8 +113,8 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 	}
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, createTable(db, name, fields1), "Failed to create table")
-		verifyTableStructure(t, db, name, fields1)
+		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
+		verifySqliteDB(t, sink, name, fields1)
 	})
 
 	// Create updated agent with additional fields
@@ -132,8 +136,8 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 	}
 
 	t.Run("migrate table", func(t *testing.T) {
-		require.NoError(t, migrateTable(db, name, fields2), "Failed to migrate table")
-		verifyTableStructure(t, db, name, fields2)
+		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
+		verifySqliteDB(t, sink, name, fields2)
 	})
 }
 
@@ -141,6 +145,8 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(t, err)
 	defer db.Close()
+
+	sink := &SQLiteSink{db}
 
 	// Create initial agent with some fields
 	name := "test_removal"
@@ -162,8 +168,8 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 	}
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, createTable(db, name, fields1), "Failed to create table")
-		verifyTableStructure(t, db, name, fields1)
+		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
+		verifySqliteDB(t, sink, name, fields1)
 	})
 
 	// Create updated agent with fewer fields
@@ -184,8 +190,8 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 	}
 
 	t.Run("migrate table", func(t *testing.T) {
-		require.NoError(t, migrateTable(db, name, fields2), "Failed to migrate table")
-		verifyTableStructure(t, db, name, fields2)
+		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
+		verifySqliteDB(t, sink, name, fields2)
 	})
 }
 
@@ -193,6 +199,8 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 	db, err := sql.Open("sqlite3", ":memory:")
 	require.NoError(t, err)
 	defer db.Close()
+
+	sink := &SQLiteSink{db}
 
 	// Create initial agent with some fields
 	name := "test_type_change"
@@ -213,8 +221,8 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 	}
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, createTable(db, name, fields1), "Failed to create table")
-		verifyTableStructure(t, db, name, fields1)
+		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
+		verifySqliteDB(t, sink, name, fields1)
 	})
 
 	// Create updated agent with changed column types
@@ -235,23 +243,23 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 	}
 
 	t.Run("migrate table", func(t *testing.T) {
-		require.NoError(t, migrateTable(db, name, fields2), "Failed to migrate table")
-		verifyTableStructure(t, db, name, fields2)
+		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
+		verifySqliteDB(t, sink, name, fields2)
 	})
 }
 
 // verifyTableStructure checks that the table was created with the correct columns
-func verifyTableStructure(t *testing.T, db *sql.DB, name string, fields []*field.Field) {
-	tableExists, err := checkTable(db, name)
+func verifySqliteDB(t *testing.T, sink *SQLiteSink, name string, fields []*field.Field) {
+	tableExists, err := sink.checkTable(name)
 	require.NoError(t, err, "Failed to check if table exists")
 	require.True(t, tableExists, "Table does not exist")
 
-	currentColumns, err := getColumns(db, name)
+	currentColumns, err := sink.getColumns(name)
 	require.NoError(t, err, "Failed to get table columns")
 
 	expectedColumns := make(map[string]string)
 	for _, f := range fields {
-		expectedColumns[f.Name] = getSqlType(f)
+		expectedColumns[f.Name] = sink.getSqlType(f)
 	}
 
 	require.Equal(

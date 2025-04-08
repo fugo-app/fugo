@@ -52,7 +52,7 @@ func (a *appInstance) loadAgents(configPath string) error {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agentConfig.Init(name); err != nil {
+		if err := agentConfig.Init(name, nil); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 

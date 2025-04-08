@@ -1,13 +1,11 @@
 package agent
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 
-	_ "github.com/mattn/go-sqlite3"
-
 	"github.com/fugo-app/fugo/internal/field"
+	"github.com/fugo-app/fugo/internal/sink"
 	"github.com/fugo-app/fugo/internal/source/file"
 )
 
@@ -19,9 +17,13 @@ type Agent struct {
 
 	// File-based log source.
 	File *file.FileWatcher `yaml:"file,omitempty"`
+
+	sink sink.SinkDriver
 }
 
-func (a *Agent) Init(name string) error {
+func (a *Agent) Init(name string, sink sink.SinkDriver) error {
+	a.sink = sink
+
 	if name == "" {
 		return fmt.Errorf("name is required")
 	}
@@ -80,28 +82,4 @@ func (a *Agent) Process(data map[string]string) {
 	fmt.Println(a.name, string(line))
 
 	// TODO: send data to sink
-}
-
-// Migrate checks if the agent's table exists, and creates it if it doesn't.
-func (a *Agent) Migrate(db *sql.DB) error {
-	if db == nil {
-		return fmt.Errorf("database connection is required")
-	}
-
-	tableExists, err := checkTable(db, a.name)
-	if err != nil {
-		return fmt.Errorf("check table: %w", err)
-	}
-
-	if !tableExists {
-		if err := createTable(db, a.name, a.Fields); err != nil {
-			return fmt.Errorf("create table: %w", err)
-		}
-	} else {
-		if err := migrateTable(db, a.name, a.Fields); err != nil {
-			return fmt.Errorf("migrate table: %w", err)
-		}
-	}
-
-	return nil
 }

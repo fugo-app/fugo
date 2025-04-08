@@ -1,14 +1,39 @@
-package agent
+package sink
 
 import (
 	"database/sql"
 	"fmt"
 	"strings"
 
+	_ "github.com/mattn/go-sqlite3"
+
 	"github.com/fugo-app/fugo/internal/field"
 )
 
-func getSqlType(f *field.Field) string {
+type SQLiteSink struct {
+	db *sql.DB
+}
+
+func (s *SQLiteSink) Migrate(name string, fields []*field.Field) error {
+	exists, err := s.checkTable(name)
+	if err != nil {
+		return fmt.Errorf("check table: %w", err)
+	}
+
+	if !exists {
+		if err := s.createTable(name, fields); err != nil {
+			return fmt.Errorf("create table: %w", err)
+		}
+	} else {
+		if err := s.migrateTable(name, fields); err != nil {
+			return fmt.Errorf("migrate table: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (s *SQLiteSink) getSqlType(f *field.Field) string {
 	switch f.Type {
 	case "string":
 		return "TEXT"
@@ -21,10 +46,10 @@ func getSqlType(f *field.Field) string {
 	}
 }
 
-func checkTable(db *sql.DB, name string) (bool, error) {
+func (s *SQLiteSink) checkTable(name string) (bool, error) {
 	var tableExists bool
 	const checkQuery = `SELECT COUNT(*) > 0 FROM sqlite_master WHERE type = 'table' AND name = ?`
-	err := db.QueryRow(checkQuery, name).Scan(&tableExists)
+	err := s.db.QueryRow(checkQuery, name).Scan(&tableExists)
 	if err != nil && err != sql.ErrNoRows {
 		return false, err
 	}
@@ -32,9 +57,9 @@ func checkTable(db *sql.DB, name string) (bool, error) {
 	return tableExists, nil
 }
 
-func getColumns(db *sql.DB, name string) (map[string]string, error) {
+func (s *SQLiteSink) getColumns(name string) (map[string]string, error) {
 	query := fmt.Sprintf("PRAGMA table_info(`%s`)", name)
-	rows, err := db.Query(query)
+	rows, err := s.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("query table info: %w", err)
 	}
@@ -65,31 +90,31 @@ func getColumns(db *sql.DB, name string) (map[string]string, error) {
 	return columns, nil
 }
 
-func createTable(db *sql.DB, name string, fields []*field.Field) error {
+func (s *SQLiteSink) createTable(name string, fields []*field.Field) error {
 	var columns []string
 
 	columns = append(columns, "`_cursor` INTEGER PRIMARY KEY AUTOINCREMENT")
 
 	for _, f := range fields {
-		fieldType := getSqlType(f)
+		fieldType := s.getSqlType(f)
 		columns = append(columns, fmt.Sprintf("`%s` %s", f.Name, fieldType))
 	}
 
 	createTableSQL := fmt.Sprintf("CREATE TABLE `%s` (%s)", name, strings.Join(columns, ", "))
 
-	_, err := db.Exec(createTableSQL)
+	_, err := s.db.Exec(createTableSQL)
 	return err
 }
 
-func migrateTable(db *sql.DB, name string, fields []*field.Field) error {
-	currentColumns, err := getColumns(db, name)
+func (s *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
+	currentColumns, err := s.getColumns(name)
 	if err != nil {
 		return fmt.Errorf("get columns: %w", err)
 	}
 
 	desiredColumns := make(map[string]string)
 	for _, f := range fields {
-		desiredColumns[f.Name] = getSqlType(f)
+		desiredColumns[f.Name] = s.getSqlType(f)
 	}
 
 	for currentName, currentType := range currentColumns {
@@ -105,7 +130,7 @@ func migrateTable(db *sql.DB, name string, fields []*field.Field) error {
 				name,
 				currentName,
 			)
-			if _, err := db.Exec(alterQuery); err != nil {
+			if _, err := s.db.Exec(alterQuery); err != nil {
 				return fmt.Errorf("drop column %s: %w", currentName, err)
 			}
 		}
@@ -119,7 +144,7 @@ func migrateTable(db *sql.DB, name string, fields []*field.Field) error {
 				desiredName,
 				desiredType,
 			)
-			if _, err := db.Exec(alterQuery); err != nil {
+			if _, err := s.db.Exec(alterQuery); err != nil {
 				return fmt.Errorf("add column %s: %w", desiredName, err)
 			}
 		}
