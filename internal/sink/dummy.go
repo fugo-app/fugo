@@ -9,15 +9,10 @@ import (
 
 type DummySink struct{}
 
-func (DummySink) Open() error {
-	return nil
-}
+func (DummySink) Open() error  { return nil }
+func (DummySink) Close() error { return nil }
 
-func (DummySink) Close() {}
-
-func (DummySink) Migrate(name string, fields []*field.Field) error {
-	return nil
-}
+func (DummySink) Migrate(name string, fields []*field.Field) error { return nil }
 
 func (DummySink) Write(name string, data map[string]any) {
 	line, _ := json.Marshal(data)

@@ -17,7 +17,10 @@ import (
 )
 
 type appInstance struct {
-	Agents map[string]*agent.Agent
+	Sink *sink.SinkConfig `yaml:"sink"`
+
+	sink   sink.SinkDriver
+	agents map[string]*agent.Agent
 }
 
 func (a *appInstance) loadAgents(configPath string) error {
@@ -28,9 +31,7 @@ func (a *appInstance) loadAgents(configPath string) error {
 		return err
 	}
 
-	sink := &sink.DummySink{}
-
-	a.Agents = make(map[string]*agent.Agent)
+	a.agents = make(map[string]*agent.Agent)
 
 	for _, entry := range entries {
 		if !entry.Type().IsRegular() {
@@ -55,17 +56,37 @@ func (a *appInstance) loadAgents(configPath string) error {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agentConfig.Init(name, sink); err != nil {
+		if err := agentConfig.Init(name, a.sink); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 
-		a.Agents[name] = agentConfig
+		a.agents[name] = agentConfig
 	}
 
 	return nil
 }
 
-func (a *appInstance) Init(configDir string) error {
+func (a *appInstance) Init(configFile string) error {
+	configDir := filepath.Dir(configFile)
+
+	configData, err := os.ReadFile(configFile)
+	if err != nil {
+		return fmt.Errorf("read config: %w", err)
+	}
+
+	if err := yaml.Unmarshal(configData, a); err != nil {
+		return fmt.Errorf("parse config (%s): %w", configFile, err)
+	}
+
+	if a.Sink.SQLite != nil {
+		a.sink = a.Sink.SQLite
+	} else {
+		a.sink = &sink.DummySink{}
+	}
+	if err := a.sink.Open(); err != nil {
+		return fmt.Errorf("open sink: %w", err)
+	}
+
 	if err := a.loadAgents(configDir); err != nil {
 		return fmt.Errorf("loading agents: %w", err)
 	}
@@ -75,14 +96,18 @@ func (a *appInstance) Init(configDir string) error {
 
 func (a *appInstance) Start() {
 	// Start all agents
-	for _, agent := range a.Agents {
+	for _, agent := range a.agents {
 		agent.Start()
 	}
 }
 
 func (a *appInstance) Stop() {
-	for _, agent := range a.Agents {
+	for _, agent := range a.agents {
 		agent.Stop()
+	}
+
+	if err := a.sink.Close(); err != nil {
+		log.Println("failed to close sink:", err)
 	}
 }
 
@@ -111,5 +136,10 @@ var watchCmd = &cobra.Command{
 }
 
 func init() {
-	watchCmd.LocalFlags().StringVar(&configFile, "config", "/etc/fugo", "Path to the configuration directory")
+	watchCmd.LocalFlags().StringVar(
+		&configFile,
+		"config",
+		"/etc/fugo/config.yaml",
+		"Path to the configuration file",
+	)
 }

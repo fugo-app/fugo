@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -25,9 +27,17 @@ type insertQueueItem struct {
 }
 
 func (ss *SQLiteSink) Open() error {
+	// Create parent directory if it doesn't exist
+	if !strings.HasPrefix(ss.Path, ":") {
+		dir := filepath.Dir(ss.Path)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("create directory for sqlite database: %w", err)
+		}
+	}
+
 	db, err := sql.Open("sqlite3", ss.Path)
 	if err != nil {
-		return fmt.Errorf("failed to open sqlite sink: %w", err)
+		return fmt.Errorf("open sqlite database: %w", err)
 	}
 	ss.db = db
 
@@ -38,12 +48,14 @@ func (ss *SQLiteSink) Open() error {
 	return nil
 }
 
-func (ss *SQLiteSink) Close() {
+func (ss *SQLiteSink) Close() error {
 	close(ss.stop)
 
 	if err := ss.db.Close(); err != nil {
-		log.Printf("failed to close sqlite sink: %v\n", err)
+		return fmt.Errorf("close sqlite database: %w", err)
 	}
+
+	return nil
 }
 
 func (ss *SQLiteSink) Migrate(name string, fields []*field.Field) error {
