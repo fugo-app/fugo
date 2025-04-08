@@ -7,12 +7,15 @@ A flexible logs parsing and processing agent.
 Fugo uses YAML configuration files. The main configuration file is located at `/etc/fugo/config.yaml`.
 
 ```yaml
-sink:
+storage:
   sqlite:
     path: /var/lib/fugo/fugo.db
 ```
 
-Options for SQLite sink:
+- `storage`: Configuration for the log storage backend.
+
+Options for SQLite storage:
+
 - `path`: Path to the SQLite database file. If the file does not exist, it will be created.
 - `journal_mode`: SQLite journal mode. Default is `wal`. Other options are `delete`, `truncate`, `persist`, `memory`, and `off`.
 - `synchronous`: SQLite synchronous mode. Default is `normal`. Other options are `full`, `off`, and `extra`.

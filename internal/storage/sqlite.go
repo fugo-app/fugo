@@ -1,4 +1,4 @@
-package sink
+package storage
 
 import (
 	"database/sql"
@@ -14,7 +14,7 @@ import (
 	"github.com/fugo-app/fugo/internal/field"
 )
 
-type SQLiteSink struct {
+type SQLiteStorage struct {
 	Path string `yaml:"path"`
 
 	// Default: "wal"
@@ -36,7 +36,7 @@ type insertQueueItem struct {
 	data map[string]any
 }
 
-func (ss *SQLiteSink) Open() error {
+func (ss *SQLiteStorage) Open() error {
 	sourceName := ss.Path
 
 	// Create parent directory if it doesn't exist
@@ -84,7 +84,7 @@ func (ss *SQLiteSink) Open() error {
 	return nil
 }
 
-func (ss *SQLiteSink) Close() error {
+func (ss *SQLiteStorage) Close() error {
 	close(ss.stop)
 
 	if err := ss.db.Close(); err != nil {
@@ -94,7 +94,7 @@ func (ss *SQLiteSink) Close() error {
 	return nil
 }
 
-func (ss *SQLiteSink) Migrate(name string, fields []*field.Field) error {
+func (ss *SQLiteStorage) Migrate(name string, fields []*field.Field) error {
 	exists, err := ss.checkTable(name)
 	if err != nil {
 		return fmt.Errorf("check table: %w", err)
@@ -113,11 +113,11 @@ func (ss *SQLiteSink) Migrate(name string, fields []*field.Field) error {
 	return nil
 }
 
-func (ss *SQLiteSink) Write(name string, data map[string]any) {
+func (ss *SQLiteStorage) Write(name string, data map[string]any) {
 	ss.insertQueue <- &insertQueueItem{name, data}
 }
 
-func (ss *SQLiteSink) getSqlType(f *field.Field) string {
+func (ss *SQLiteStorage) getSqlType(f *field.Field) string {
 	switch f.Type {
 	case "string":
 		return "TEXT"
@@ -130,7 +130,7 @@ func (ss *SQLiteSink) getSqlType(f *field.Field) string {
 	}
 }
 
-func (s *SQLiteSink) checkTable(name string) (bool, error) {
+func (s *SQLiteStorage) checkTable(name string) (bool, error) {
 	var tableExists bool
 	const checkQuery = `SELECT COUNT(*) > 0 FROM sqlite_master WHERE type = 'table' AND name = ?`
 	err := s.db.QueryRow(checkQuery, name).Scan(&tableExists)
@@ -141,7 +141,7 @@ func (s *SQLiteSink) checkTable(name string) (bool, error) {
 	return tableExists, nil
 }
 
-func (ss *SQLiteSink) getColumns(name string) (map[string]string, error) {
+func (ss *SQLiteStorage) getColumns(name string) (map[string]string, error) {
 	query := fmt.Sprintf("PRAGMA table_info(`%s`)", name)
 	rows, err := ss.db.Query(query)
 	if err != nil {
@@ -174,7 +174,7 @@ func (ss *SQLiteSink) getColumns(name string) (map[string]string, error) {
 	return columns, nil
 }
 
-func (ss *SQLiteSink) createTable(name string, fields []*field.Field) error {
+func (ss *SQLiteStorage) createTable(name string, fields []*field.Field) error {
 	var columns []string
 
 	columns = append(columns, "`_cursor` INTEGER PRIMARY KEY AUTOINCREMENT")
@@ -190,7 +190,7 @@ func (ss *SQLiteSink) createTable(name string, fields []*field.Field) error {
 	return err
 }
 
-func (ss *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
+func (ss *SQLiteStorage) migrateTable(name string, fields []*field.Field) error {
 	currentColumns, err := ss.getColumns(name)
 	if err != nil {
 		return fmt.Errorf("get columns: %w", err)
@@ -237,7 +237,7 @@ func (ss *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
 	return nil
 }
 
-func (ss *SQLiteSink) insertData(name string, data map[string]any) error {
+func (ss *SQLiteStorage) insertData(name string, data map[string]any) error {
 	columns := []string{}
 	placeholders := []string{}
 	values := []any{}
@@ -259,14 +259,14 @@ func (ss *SQLiteSink) insertData(name string, data map[string]any) error {
 	return err
 }
 
-func (ss *SQLiteSink) watch() {
+func (ss *SQLiteStorage) watch() {
 	for {
 		select {
 		case <-ss.stop:
 			return
 		case item := <-ss.insertQueue:
 			if err := ss.insertData(item.name, item.data); err != nil {
-				log.Printf("failed to insert log record into sqlite sink: %v", err)
+				log.Printf("failed to insert log record into sqlite storage: %v", err)
 			}
 		}
 	}

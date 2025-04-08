@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/fugo-app/fugo/internal/field"
-	"github.com/fugo-app/fugo/internal/sink"
 	"github.com/fugo-app/fugo/internal/source/file"
+	"github.com/fugo-app/fugo/internal/storage"
 )
 
 type Agent struct {
@@ -17,11 +17,11 @@ type Agent struct {
 	// File-based log source.
 	File *file.FileWatcher `yaml:"file,omitempty"`
 
-	sink sink.SinkDriver
+	storage storage.StorageDriver
 }
 
-func (a *Agent) Init(name string, sink sink.SinkDriver) error {
-	a.sink = sink
+func (a *Agent) Init(name string, storage storage.StorageDriver) error {
+	a.storage = storage
 
 	if name == "" {
 		return fmt.Errorf("name is required")
@@ -77,5 +77,5 @@ func (a *Agent) Process(data map[string]string) {
 		}
 	}
 
-	a.sink.Write(a.name, result)
+	a.storage.Write(a.name, result)
 }

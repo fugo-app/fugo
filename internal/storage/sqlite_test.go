@@ -1,4 +1,4 @@
-package sink
+package storage
 
 import (
 	"database/sql"
@@ -10,10 +10,10 @@ import (
 	"github.com/fugo-app/fugo/internal/field"
 )
 
-func TestSQLiteSink_createTable(t *testing.T) {
-	sink := &SQLiteSink{Path: ":memory:"}
-	require.NoError(t, sink.Open(), "Failed to open SQLite database")
-	defer sink.Close()
+func TestSQLiteStorage_createTable(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
 
 	name := "test_agent"
 	fields := initFields(t, []*field.Field{
@@ -30,17 +30,17 @@ func TestSQLiteSink_createTable(t *testing.T) {
 	})
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
+		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
 	})
 
 	t.Run("check table exists", func(t *testing.T) {
-		exists, err := sink.checkTable(name)
+		exists, err := storage.checkTable(name)
 		require.NoError(t, err, "Failed to check if table exists")
 		require.True(t, exists, "Table should exist after creation")
 	})
 
 	t.Run("check table structure", func(t *testing.T) {
-		columns, err := sink.getColumns(name)
+		columns, err := storage.getColumns(name)
 		require.NoError(t, err, "Failed to get table columns")
 
 		expectedColumns := map[string]string{
@@ -55,7 +55,7 @@ func TestSQLiteSink_createTable(t *testing.T) {
 	})
 
 	t.Run("check _cursor column", func(t *testing.T) {
-		rows, err := sink.db.Query(fmt.Sprintf("PRAGMA table_info(`%s`)", name))
+		rows, err := storage.db.Query(fmt.Sprintf("PRAGMA table_info(`%s`)", name))
 		require.NoError(t, err, "Failed to query table info")
 		defer rows.Close()
 
@@ -82,10 +82,10 @@ func TestSQLiteSink_createTable(t *testing.T) {
 	})
 }
 
-func TestSQLiteSink_migrateTable_AddColumn(t *testing.T) {
-	sink := &SQLiteSink{Path: ":memory:"}
-	require.NoError(t, sink.Open(), "Failed to open SQLite database")
-	defer sink.Close()
+func TestSQLiteStorage_migrateTable_AddColumn(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
 
 	// Create initial agent with some fields
 	name := "test_migration"
@@ -102,8 +102,8 @@ func TestSQLiteSink_migrateTable_AddColumn(t *testing.T) {
 			{Name: "message", Type: "string"},
 		})
 
-		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, sink, name, fields)
+		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 
 	// Create updated agent with additional fields
@@ -121,15 +121,15 @@ func TestSQLiteSink_migrateTable_AddColumn(t *testing.T) {
 			{Name: "severity", Type: "int"}, // New column
 		})
 
-		require.NoError(t, sink.migrateTable(name, fields), "Failed to migrate table")
-		verifySqliteDB(t, sink, name, fields)
+		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 }
 
-func TestSQLiteSink_migrateTable_RemoveColumn(t *testing.T) {
-	sink := &SQLiteSink{Path: ":memory:"}
-	require.NoError(t, sink.Open(), "Failed to open SQLite database")
-	defer sink.Close()
+func TestSQLiteStorage_migrateTable_RemoveColumn(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
 
 	// Create initial agent with some fields
 	name := "test_removal"
@@ -148,8 +148,8 @@ func TestSQLiteSink_migrateTable_RemoveColumn(t *testing.T) {
 			{Name: "value", Type: "float"},
 		})
 
-		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, sink, name, fields)
+		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 
 	// Create updated agent with fewer fields
@@ -166,15 +166,15 @@ func TestSQLiteSink_migrateTable_RemoveColumn(t *testing.T) {
 			// Removed "level" and "count" columns
 		})
 
-		require.NoError(t, sink.migrateTable(name, fields), "Failed to migrate table")
-		verifySqliteDB(t, sink, name, fields)
+		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 }
 
-func TestSQLiteSink_MigrateChangeColumnType(t *testing.T) {
-	sink := &SQLiteSink{Path: ":memory:"}
-	require.NoError(t, sink.Open(), "Failed to open SQLite database")
-	defer sink.Close()
+func TestSQLiteStorage_MigrateChangeColumnType(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
 
 	// Create initial agent with some fields
 	name := "test_type_change"
@@ -192,8 +192,8 @@ func TestSQLiteSink_MigrateChangeColumnType(t *testing.T) {
 			{Name: "status", Type: "string"}, // This will be changed to int
 		})
 
-		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, sink, name, fields)
+		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 
 	// Create updated agent with changed column types
@@ -210,15 +210,15 @@ func TestSQLiteSink_MigrateChangeColumnType(t *testing.T) {
 			{Name: "status", Type: "int"},  // Changed from string to int
 		})
 
-		require.NoError(t, sink.migrateTable(name, fields), "Failed to migrate table")
-		verifySqliteDB(t, sink, name, fields)
+		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 }
 
-func TestSQLiteSink_insertData(t *testing.T) {
-	sink := &SQLiteSink{Path: ":memory:"}
-	require.NoError(t, sink.Open(), "Failed to open SQLite database")
-	defer sink.Close()
+func TestSQLiteStorage_insertData(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
 
 	name := "test_insert"
 	fields := initFields(t, []*field.Field{
@@ -235,7 +235,7 @@ func TestSQLiteSink_insertData(t *testing.T) {
 	})
 
 	// Create the table
-	require.NoError(t, sink.createTable(name, fields), "Failed to create table")
+	require.NoError(t, storage.createTable(name, fields), "Failed to create table")
 
 	// Test inserting data
 	testData := map[string]any{
@@ -247,11 +247,11 @@ func TestSQLiteSink_insertData(t *testing.T) {
 	}
 
 	// Insert the data
-	err := sink.insertData(name, testData)
+	err := storage.insertData(name, testData)
 	require.NoError(t, err, "Failed to insert data")
 
 	// Verify the data was inserted correctly
-	row := sink.db.QueryRow(fmt.Sprintf("SELECT timestamp, level, message, count, value FROM `%s` LIMIT 1", name))
+	row := storage.db.QueryRow(fmt.Sprintf("SELECT timestamp, level, message, count, value FROM `%s` LIMIT 1", name))
 
 	var (
 		timestamp int64
@@ -280,17 +280,17 @@ func initFields(t *testing.T, fields []*field.Field) []*field.Field {
 }
 
 // verifyTableStructure checks that the table was created with the correct columns
-func verifySqliteDB(t *testing.T, sink *SQLiteSink, name string, fields []*field.Field) {
-	tableExists, err := sink.checkTable(name)
+func verifySqliteDB(t *testing.T, storage *SQLiteStorage, name string, fields []*field.Field) {
+	tableExists, err := storage.checkTable(name)
 	require.NoError(t, err, "Failed to check if table exists")
 	require.True(t, tableExists, "Table does not exist")
 
-	currentColumns, err := sink.getColumns(name)
+	currentColumns, err := storage.getColumns(name)
 	require.NoError(t, err, "Failed to get table columns")
 
 	expectedColumns := make(map[string]string)
 	for _, f := range fields {
-		expectedColumns[f.Name] = sink.getSqlType(f)
+		expectedColumns[f.Name] = storage.getSqlType(f)
 	}
 
 	require.Equal(

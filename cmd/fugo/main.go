@@ -13,13 +13,15 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/fugo-app/fugo/internal/agent"
-	"github.com/fugo-app/fugo/internal/sink"
+	"github.com/fugo-app/fugo/internal/server"
+	"github.com/fugo-app/fugo/internal/storage"
 )
 
 var Version = "0.0.0"
 
 type appInstance struct {
-	Sink *sink.SinkConfig `yaml:"sink"`
+	Server  server.ServerConfig   `yaml:"server"`
+	Storage storage.StorageConfig `yaml:"storage"`
 
 	agents map[string]*agent.Agent
 }
@@ -90,11 +92,11 @@ func (a *appInstance) loadAgents(configPath string) error {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agent.Init(name, a.Sink); err != nil {
+		if err := agent.Init(name, &a.Storage); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 
-		if err := a.Sink.Migrate(name, agent.Fields); err != nil {
+		if err := a.Storage.Migrate(name, agent.Fields); err != nil {
 			return fmt.Errorf("migrate agent (%s): %w", name, err)
 		}
 
@@ -116,8 +118,12 @@ func (a *appInstance) init(configFile string) error {
 		return fmt.Errorf("parse config (%s): %w", configFile, err)
 	}
 
-	if err := a.Sink.Open(); err != nil {
-		return fmt.Errorf("open sink: %w", err)
+	if err := a.Server.Open(); err != nil {
+		return fmt.Errorf("open server: %w", err)
+	}
+
+	if err := a.Storage.Open(); err != nil {
+		return fmt.Errorf("open storage: %w", err)
 	}
 
 	if err := a.loadAgents(configDir); err != nil {
@@ -135,11 +141,15 @@ func (a *appInstance) start() {
 }
 
 func (a *appInstance) stop() {
+	if err := a.Server.Close(); err != nil {
+		log.Println("failed to close server:", err)
+	}
+
 	for _, agent := range a.agents {
 		agent.Stop()
 	}
 
-	if err := a.Sink.Close(); err != nil {
-		log.Println("failed to close sink:", err)
+	if err := a.Storage.Close(); err != nil {
+		log.Println("failed to close storage:", err)
 	}
 }
