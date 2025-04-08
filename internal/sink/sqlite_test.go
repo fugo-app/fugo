@@ -11,11 +11,9 @@ import (
 )
 
 func Test_createTable(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(t, err)
-	defer db.Close()
-
-	sink := &SQLiteSink{db}
+	sink := &SQLiteSink{Path: ":memory:"}
+	require.NoError(t, sink.Open(), "Failed to open SQLite database")
+	defer sink.Close()
 
 	name := "test_agent"
 	fields := []*field.Field{
@@ -61,7 +59,7 @@ func Test_createTable(t *testing.T) {
 	})
 
 	t.Run("check _cursor column", func(t *testing.T) {
-		rows, err := db.Query(fmt.Sprintf("PRAGMA table_info(`%s`)", name))
+		rows, err := sink.db.Query(fmt.Sprintf("PRAGMA table_info(`%s`)", name))
 		require.NoError(t, err, "Failed to query table info")
 		defer rows.Close()
 
@@ -89,11 +87,9 @@ func Test_createTable(t *testing.T) {
 }
 
 func Test_migrateTable_AddColumn(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(t, err)
-	defer db.Close()
-
-	sink := &SQLiteSink{db}
+	sink := &SQLiteSink{Path: ":memory:"}
+	require.NoError(t, sink.Open(), "Failed to open SQLite database")
+	defer sink.Close()
 
 	// Create initial agent with some fields
 	name := "test_migration"
@@ -142,11 +138,9 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 }
 
 func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(t, err)
-	defer db.Close()
-
-	sink := &SQLiteSink{db}
+	sink := &SQLiteSink{Path: ":memory:"}
+	require.NoError(t, sink.Open(), "Failed to open SQLite database")
+	defer sink.Close()
 
 	// Create initial agent with some fields
 	name := "test_removal"
@@ -196,11 +190,9 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 }
 
 func TestAgent_MigrateChangeColumnType(t *testing.T) {
-	db, err := sql.Open("sqlite3", ":memory:")
-	require.NoError(t, err)
-	defer db.Close()
-
-	sink := &SQLiteSink{db}
+	sink := &SQLiteSink{Path: ":memory:"}
+	require.NoError(t, sink.Open(), "Failed to open SQLite database")
+	defer sink.Close()
 
 	// Create initial agent with some fields
 	name := "test_type_change"

@@ -3,6 +3,7 @@ package sink
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -11,7 +12,24 @@ import (
 )
 
 type SQLiteSink struct {
+	Path string `yaml:"path"`
+
 	db *sql.DB
+}
+
+func (s *SQLiteSink) Open() error {
+	db, err := sql.Open("sqlite3", s.Path)
+	if err != nil {
+		return fmt.Errorf("failed to open sqlite sink: %w", err)
+	}
+	s.db = db
+	return nil
+}
+
+func (s *SQLiteSink) Close() {
+	if err := s.db.Close(); err != nil {
+		log.Printf("failed to close sqlite sink: %v\n", err)
+	}
 }
 
 func (s *SQLiteSink) Migrate(name string, fields []*field.Field) error {
