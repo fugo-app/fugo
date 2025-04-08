@@ -7,12 +7,20 @@ A flexible logs parsing and processing agent.
 Fugo uses YAML configuration files. The main configuration file is located at `/etc/fugo/config.yaml`.
 
 ```yaml
+server:
+  listen: 127.0.0.1:2221
+
 storage:
   sqlite:
     path: /var/lib/fugo/fugo.db
 ```
 
+- `server`: Configuration for the HTTP API server.
 - `storage`: Configuration for the log storage backend.
+
+Options for HTTP API server:
+
+- `listen`: The address and port for the HTTP server (e.g., "127.0.0.1:2221" or ":2221").
 
 Options for SQLite storage:
 
