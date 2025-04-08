@@ -51,16 +51,20 @@ func (a *appInstance) loadAgents(configPath string) error {
 			return fmt.Errorf("read config (%s): %w", filePath, err)
 		}
 
-		agentConfig := new(agent.Agent)
-		if err := yaml.Unmarshal(data, agentConfig); err != nil {
+		agent := new(agent.Agent)
+		if err := yaml.Unmarshal(data, agent); err != nil {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agentConfig.Init(name, a.sink); err != nil {
+		if err := agent.Init(name, a.sink); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 
-		a.agents[name] = agentConfig
+		if err := a.sink.Migrate(name, agent.Fields); err != nil {
+			return fmt.Errorf("migrate agent (%s): %w", name, err)
+		}
+
+		a.agents[name] = agent
 	}
 
 	return nil
