@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/fugo-app/fugo/internal/agent"
+	"github.com/fugo-app/fugo/internal/sink"
 )
 
 type appInstance struct {
@@ -26,6 +27,8 @@ func (a *appInstance) loadAgents(configPath string) error {
 	if err != nil {
 		return err
 	}
+
+	sink := &sink.DummySink{}
 
 	a.Agents = make(map[string]*agent.Agent)
 
@@ -52,7 +55,7 @@ func (a *appInstance) loadAgents(configPath string) error {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agentConfig.Init(name, nil); err != nil {
+		if err := agentConfig.Init(name, sink); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 

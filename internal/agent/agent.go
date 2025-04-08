@@ -1,7 +1,6 @@
 package agent
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/fugo-app/fugo/internal/field"
@@ -78,8 +77,5 @@ func (a *Agent) Process(data map[string]string) {
 		}
 	}
 
-	line, _ := json.Marshal(result)
-	fmt.Println(a.name, string(line))
-
-	// TODO: send data to sink
+	a.sink.Write(a.name, result)
 }

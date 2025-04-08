@@ -65,9 +65,8 @@ func (ss *SQLiteSink) Migrate(name string, fields []*field.Field) error {
 	return nil
 }
 
-func (ss *SQLiteSink) Write(name string, data map[string]any) error {
+func (ss *SQLiteSink) Write(name string, data map[string]any) {
 	ss.insertQueue <- &insertQueueItem{name, data}
-	return nil
 }
 
 func (ss *SQLiteSink) getSqlType(f *field.Field) string {
