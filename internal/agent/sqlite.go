@@ -8,8 +8,8 @@ import (
 	"github.com/fugo-app/fugo/internal/field"
 )
 
-func getSqlType(fieldType string) string {
-	switch fieldType {
+func getSqlType(f *field.Field) string {
+	switch f.Type {
 	case "string":
 		return "TEXT"
 	case "int", "time":
@@ -71,7 +71,7 @@ func createTable(db *sql.DB, name string, fields []*field.Field) error {
 	columns = append(columns, "`_cursor` INTEGER PRIMARY KEY AUTOINCREMENT")
 
 	for _, f := range fields {
-		fieldType := getSqlType(f.Type)
+		fieldType := getSqlType(f)
 		columns = append(columns, fmt.Sprintf("`%s` %s", f.Name, fieldType))
 	}
 
@@ -89,7 +89,7 @@ func migrateTable(db *sql.DB, name string, fields []*field.Field) error {
 
 	desiredColumns := make(map[string]string)
 	for _, f := range fields {
-		desiredColumns[f.Name] = getSqlType(f.Type)
+		desiredColumns[f.Name] = getSqlType(f)
 	}
 
 	for currentName, currentType := range currentColumns {

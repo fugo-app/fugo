@@ -251,7 +251,7 @@ func verifyTableStructure(t *testing.T, db *sql.DB, name string, fields []*field
 
 	expectedColumns := make(map[string]string)
 	for _, f := range fields {
-		expectedColumns[f.Name] = getSqlType(f.Type)
+		expectedColumns[f.Name] = getSqlType(f)
 	}
 
 	require.Equal(
