@@ -21,7 +21,6 @@ var Version = "0.0.0"
 type appInstance struct {
 	Sink *sink.SinkConfig `yaml:"sink"`
 
-	sink   sink.SinkDriver
 	agents map[string]*agent.Agent
 }
 
@@ -91,11 +90,11 @@ func (a *appInstance) loadAgents(configPath string) error {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agent.Init(name, a.sink); err != nil {
+		if err := agent.Init(name, a.Sink); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 
-		if err := a.sink.Migrate(name, agent.Fields); err != nil {
+		if err := a.Sink.Migrate(name, agent.Fields); err != nil {
 			return fmt.Errorf("migrate agent (%s): %w", name, err)
 		}
 
@@ -117,12 +116,7 @@ func (a *appInstance) init(configFile string) error {
 		return fmt.Errorf("parse config (%s): %w", configFile, err)
 	}
 
-	if a.Sink.SQLite != nil {
-		a.sink = a.Sink.SQLite
-	} else {
-		a.sink = &sink.DummySink{}
-	}
-	if err := a.sink.Open(); err != nil {
+	if err := a.Sink.Open(); err != nil {
 		return fmt.Errorf("open sink: %w", err)
 	}
 
@@ -145,7 +139,7 @@ func (a *appInstance) stop() {
 		agent.Stop()
 	}
 
-	if err := a.sink.Close(); err != nil {
+	if err := a.Sink.Close(); err != nil {
 		log.Println("failed to close sink:", err)
 	}
 }
