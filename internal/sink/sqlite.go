@@ -14,36 +14,43 @@ import (
 type SQLiteSink struct {
 	Path string `yaml:"path"`
 
-	db *sql.DB
+	db   *sql.DB
+	stop chan struct{}
 }
 
-func (s *SQLiteSink) Open() error {
-	db, err := sql.Open("sqlite3", s.Path)
+func (ss *SQLiteSink) Open() error {
+	db, err := sql.Open("sqlite3", ss.Path)
 	if err != nil {
 		return fmt.Errorf("failed to open sqlite sink: %w", err)
 	}
-	s.db = db
+	ss.db = db
+
+	ss.stop = make(chan struct{})
+	go ss.watch()
+
 	return nil
 }
 
-func (s *SQLiteSink) Close() {
-	if err := s.db.Close(); err != nil {
+func (ss *SQLiteSink) Close() {
+	close(ss.stop)
+
+	if err := ss.db.Close(); err != nil {
 		log.Printf("failed to close sqlite sink: %v\n", err)
 	}
 }
 
-func (s *SQLiteSink) Migrate(name string, fields []*field.Field) error {
-	exists, err := s.checkTable(name)
+func (ss *SQLiteSink) Migrate(name string, fields []*field.Field) error {
+	exists, err := ss.checkTable(name)
 	if err != nil {
 		return fmt.Errorf("check table: %w", err)
 	}
 
 	if !exists {
-		if err := s.createTable(name, fields); err != nil {
+		if err := ss.createTable(name, fields); err != nil {
 			return fmt.Errorf("create table: %w", err)
 		}
 	} else {
-		if err := s.migrateTable(name, fields); err != nil {
+		if err := ss.migrateTable(name, fields); err != nil {
 			return fmt.Errorf("migrate table: %w", err)
 		}
 	}
@@ -51,7 +58,7 @@ func (s *SQLiteSink) Migrate(name string, fields []*field.Field) error {
 	return nil
 }
 
-func (s *SQLiteSink) getSqlType(f *field.Field) string {
+func (ss *SQLiteSink) getSqlType(f *field.Field) string {
 	switch f.Type {
 	case "string":
 		return "TEXT"
@@ -75,9 +82,9 @@ func (s *SQLiteSink) checkTable(name string) (bool, error) {
 	return tableExists, nil
 }
 
-func (s *SQLiteSink) getColumns(name string) (map[string]string, error) {
+func (ss *SQLiteSink) getColumns(name string) (map[string]string, error) {
 	query := fmt.Sprintf("PRAGMA table_info(`%s`)", name)
-	rows, err := s.db.Query(query)
+	rows, err := ss.db.Query(query)
 	if err != nil {
 		return nil, fmt.Errorf("query table info: %w", err)
 	}
@@ -108,31 +115,31 @@ func (s *SQLiteSink) getColumns(name string) (map[string]string, error) {
 	return columns, nil
 }
 
-func (s *SQLiteSink) createTable(name string, fields []*field.Field) error {
+func (ss *SQLiteSink) createTable(name string, fields []*field.Field) error {
 	var columns []string
 
 	columns = append(columns, "`_cursor` INTEGER PRIMARY KEY AUTOINCREMENT")
 
 	for _, f := range fields {
-		fieldType := s.getSqlType(f)
+		fieldType := ss.getSqlType(f)
 		columns = append(columns, fmt.Sprintf("`%s` %s", f.Name, fieldType))
 	}
 
 	createTableSQL := fmt.Sprintf("CREATE TABLE `%s` (%s)", name, strings.Join(columns, ", "))
 
-	_, err := s.db.Exec(createTableSQL)
+	_, err := ss.db.Exec(createTableSQL)
 	return err
 }
 
-func (s *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
-	currentColumns, err := s.getColumns(name)
+func (ss *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
+	currentColumns, err := ss.getColumns(name)
 	if err != nil {
 		return fmt.Errorf("get columns: %w", err)
 	}
 
 	desiredColumns := make(map[string]string)
 	for _, f := range fields {
-		desiredColumns[f.Name] = s.getSqlType(f)
+		desiredColumns[f.Name] = ss.getSqlType(f)
 	}
 
 	for currentName, currentType := range currentColumns {
@@ -148,7 +155,7 @@ func (s *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
 				name,
 				currentName,
 			)
-			if _, err := s.db.Exec(alterQuery); err != nil {
+			if _, err := ss.db.Exec(alterQuery); err != nil {
 				return fmt.Errorf("drop column %s: %w", currentName, err)
 			}
 		}
@@ -162,11 +169,15 @@ func (s *SQLiteSink) migrateTable(name string, fields []*field.Field) error {
 				desiredName,
 				desiredType,
 			)
-			if _, err := s.db.Exec(alterQuery); err != nil {
+			if _, err := ss.db.Exec(alterQuery); err != nil {
 				return fmt.Errorf("add column %s: %w", desiredName, err)
 			}
 		}
 	}
 
 	return nil
+}
+
+func (ss *SQLiteSink) watch() {
+	<-ss.stop
 }
