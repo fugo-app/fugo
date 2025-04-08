@@ -89,39 +89,40 @@ func TestSQLiteSink_migrateTable_AddColumn(t *testing.T) {
 
 	// Create initial agent with some fields
 	name := "test_migration"
-	fields1 := initFields(t, []*field.Field{
-		{
-			Name: "timestamp",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "level", Type: "string"},
-		{Name: "message", Type: "string"},
-	})
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
-		verifySqliteDB(t, sink, name, fields1)
+		fields := initFields(t, []*field.Field{
+			{
+				Name: "timestamp",
+				Timestamp: &field.TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
+			},
+			{Name: "level", Type: "string"},
+			{Name: "message", Type: "string"},
+		})
+
+		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, sink, name, fields)
 	})
 
 	// Create updated agent with additional fields
-	fields2 := initFields(t, []*field.Field{
-		{
-			Name: "timestamp",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "level", Type: "string"},
-		{Name: "message", Type: "string"},
-		{Name: "count", Type: "int"},    // New column
-		{Name: "severity", Type: "int"}, // New column
-	})
-
 	t.Run("migrate table", func(t *testing.T) {
-		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
-		verifySqliteDB(t, sink, name, fields2)
+		fields := initFields(t, []*field.Field{
+			{
+				Name: "timestamp",
+				Timestamp: &field.TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
+			},
+			{Name: "level", Type: "string"},
+			{Name: "message", Type: "string"},
+			{Name: "count", Type: "int"},    // New column
+			{Name: "severity", Type: "int"}, // New column
+		})
+
+		require.NoError(t, sink.migrateTable(name, fields), "Failed to migrate table")
+		verifySqliteDB(t, sink, name, fields)
 	})
 }
 
@@ -132,40 +133,41 @@ func TestSQLiteSink_migrateTable_RemoveColumn(t *testing.T) {
 
 	// Create initial agent with some fields
 	name := "test_removal"
-	fields1 := initFields(t, []*field.Field{
-		{
-			Name: "timestamp",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "level", Type: "string"},
-		{Name: "message", Type: "string"},
-		{Name: "count", Type: "int"},
-		{Name: "value", Type: "float"},
-	})
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
-		verifySqliteDB(t, sink, name, fields1)
+		fields := initFields(t, []*field.Field{
+			{
+				Name: "timestamp",
+				Timestamp: &field.TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
+			},
+			{Name: "level", Type: "string"},
+			{Name: "message", Type: "string"},
+			{Name: "count", Type: "int"},
+			{Name: "value", Type: "float"},
+		})
+
+		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, sink, name, fields)
 	})
 
 	// Create updated agent with fewer fields
-	fields2 := initFields(t, []*field.Field{
-		{
-			Name: "timestamp",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "message", Type: "string"}, // Keep these columns
-		{Name: "value", Type: "float"},    // Keep these columns
-		// Removed "level" and "count" columns
-	})
-
 	t.Run("migrate table", func(t *testing.T) {
-		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
-		verifySqliteDB(t, sink, name, fields2)
+		fields := initFields(t, []*field.Field{
+			{
+				Name: "timestamp",
+				Timestamp: &field.TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
+			},
+			{Name: "message", Type: "string"}, // Keep these columns
+			{Name: "value", Type: "float"},    // Keep these columns
+			// Removed "level" and "count" columns
+		})
+
+		require.NoError(t, sink.migrateTable(name, fields), "Failed to migrate table")
+		verifySqliteDB(t, sink, name, fields)
 	})
 }
 
@@ -176,39 +178,40 @@ func TestSQLiteSink_MigrateChangeColumnType(t *testing.T) {
 
 	// Create initial agent with some fields
 	name := "test_type_change"
-	fields1 := initFields(t, []*field.Field{
-		{
-			Name: "timestamp",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "level", Type: "string"},
-		{Name: "count", Type: "int"},     // This will be changed to float
-		{Name: "status", Type: "string"}, // This will be changed to int
-	})
 
 	t.Run("create table", func(t *testing.T) {
-		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
-		verifySqliteDB(t, sink, name, fields1)
+		fields := initFields(t, []*field.Field{
+			{
+				Name: "timestamp",
+				Timestamp: &field.TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
+			},
+			{Name: "level", Type: "string"},
+			{Name: "count", Type: "int"},     // This will be changed to float
+			{Name: "status", Type: "string"}, // This will be changed to int
+		})
+
+		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, sink, name, fields)
 	})
 
 	// Create updated agent with changed column types
-	fields2 := initFields(t, []*field.Field{
-		{
-			Name: "timestamp",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "level", Type: "string"},
-		{Name: "count", Type: "float"}, // Changed from int to float
-		{Name: "status", Type: "int"},  // Changed from string to int
-	})
-
 	t.Run("migrate table", func(t *testing.T) {
-		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
-		verifySqliteDB(t, sink, name, fields2)
+		fields := initFields(t, []*field.Field{
+			{
+				Name: "timestamp",
+				Timestamp: &field.TimestampFormat{
+					Format: "2006-01-02 15:04:05",
+				},
+			},
+			{Name: "level", Type: "string"},
+			{Name: "count", Type: "float"}, // Changed from int to float
+			{Name: "status", Type: "int"},  // Changed from string to int
+		})
+
+		require.NoError(t, sink.migrateTable(name, fields), "Failed to migrate table")
+		verifySqliteDB(t, sink, name, fields)
 	})
 }
 
