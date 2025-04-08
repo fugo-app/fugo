@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"net/http"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -117,20 +116,11 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		} else {
-			if !slices.Contains(storage.QueryOps, op) {
+			if err := storageQuery.NewQueryOperator(key, op, value); err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintln(w, "Invalid filter operation for key", key)
+				fmt.Fprintln(w, "Invalid filter operator for key", key)
 				return
 			}
-
-			storageQuery.Filter = append(
-				storageQuery.Filter,
-				&storage.QueryFilter{
-					Name:  key,
-					Op:    op,
-					Value: value,
-				},
-			)
 		}
 	}
 
