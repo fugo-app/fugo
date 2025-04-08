@@ -118,12 +118,12 @@ func (a *appInstance) init(configFile string) error {
 		return fmt.Errorf("parse config (%s): %w", configFile, err)
 	}
 
-	if err := a.Server.Open(); err != nil {
-		return fmt.Errorf("open server: %w", err)
-	}
-
 	if err := a.Storage.Open(); err != nil {
 		return fmt.Errorf("open storage: %w", err)
+	}
+
+	if err := a.Server.Open(&a.Storage); err != nil {
+		return fmt.Errorf("open server: %w", err)
 	}
 
 	if err := a.loadAgents(configDir); err != nil {
