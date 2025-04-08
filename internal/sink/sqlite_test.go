@@ -10,13 +10,13 @@ import (
 	"github.com/fugo-app/fugo/internal/field"
 )
 
-func Test_createTable(t *testing.T) {
+func TestSQLiteSink_createTable(t *testing.T) {
 	sink := &SQLiteSink{Path: ":memory:"}
 	require.NoError(t, sink.Open(), "Failed to open SQLite database")
 	defer sink.Close()
 
 	name := "test_agent"
-	fields := []*field.Field{
+	fields := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -27,11 +27,7 @@ func Test_createTable(t *testing.T) {
 		{Name: "message", Type: "string"},
 		{Name: "count", Type: "int"},
 		{Name: "value", Type: "float"},
-	}
-
-	for _, f := range fields {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("create table", func(t *testing.T) {
 		require.NoError(t, sink.createTable(name, fields), "Failed to create table")
@@ -86,14 +82,14 @@ func Test_createTable(t *testing.T) {
 	})
 }
 
-func Test_migrateTable_AddColumn(t *testing.T) {
+func TestSQLiteSink_migrateTable_AddColumn(t *testing.T) {
 	sink := &SQLiteSink{Path: ":memory:"}
 	require.NoError(t, sink.Open(), "Failed to open SQLite database")
 	defer sink.Close()
 
 	// Create initial agent with some fields
 	name := "test_migration"
-	fields1 := []*field.Field{
+	fields1 := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -102,11 +98,7 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 		},
 		{Name: "level", Type: "string"},
 		{Name: "message", Type: "string"},
-	}
-
-	for _, f := range fields1 {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("create table", func(t *testing.T) {
 		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
@@ -114,7 +106,7 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 	})
 
 	// Create updated agent with additional fields
-	fields2 := []*field.Field{
+	fields2 := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -125,11 +117,7 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 		{Name: "message", Type: "string"},
 		{Name: "count", Type: "int"},    // New column
 		{Name: "severity", Type: "int"}, // New column
-	}
-
-	for _, f := range fields2 {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("migrate table", func(t *testing.T) {
 		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
@@ -137,14 +125,14 @@ func Test_migrateTable_AddColumn(t *testing.T) {
 	})
 }
 
-func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
+func TestSQLiteSink_migrateTable_RemoveColumn(t *testing.T) {
 	sink := &SQLiteSink{Path: ":memory:"}
 	require.NoError(t, sink.Open(), "Failed to open SQLite database")
 	defer sink.Close()
 
 	// Create initial agent with some fields
 	name := "test_removal"
-	fields1 := []*field.Field{
+	fields1 := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -155,11 +143,7 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 		{Name: "message", Type: "string"},
 		{Name: "count", Type: "int"},
 		{Name: "value", Type: "float"},
-	}
-
-	for _, f := range fields1 {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("create table", func(t *testing.T) {
 		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
@@ -167,7 +151,7 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 	})
 
 	// Create updated agent with fewer fields
-	fields2 := []*field.Field{
+	fields2 := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -177,11 +161,7 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 		{Name: "message", Type: "string"}, // Keep these columns
 		{Name: "value", Type: "float"},    // Keep these columns
 		// Removed "level" and "count" columns
-	}
-
-	for _, f := range fields2 {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("migrate table", func(t *testing.T) {
 		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
@@ -189,14 +169,14 @@ func TestAgent_migrateTable_RemoveColumn(t *testing.T) {
 	})
 }
 
-func TestAgent_MigrateChangeColumnType(t *testing.T) {
+func TestSQLiteSink_MigrateChangeColumnType(t *testing.T) {
 	sink := &SQLiteSink{Path: ":memory:"}
 	require.NoError(t, sink.Open(), "Failed to open SQLite database")
 	defer sink.Close()
 
 	// Create initial agent with some fields
 	name := "test_type_change"
-	fields1 := []*field.Field{
+	fields1 := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -206,11 +186,7 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 		{Name: "level", Type: "string"},
 		{Name: "count", Type: "int"},     // This will be changed to float
 		{Name: "status", Type: "string"}, // This will be changed to int
-	}
-
-	for _, f := range fields1 {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("create table", func(t *testing.T) {
 		require.NoError(t, sink.createTable(name, fields1), "Failed to create table")
@@ -218,7 +194,7 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 	})
 
 	// Create updated agent with changed column types
-	fields2 := []*field.Field{
+	fields2 := initFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -228,16 +204,76 @@ func TestAgent_MigrateChangeColumnType(t *testing.T) {
 		{Name: "level", Type: "string"},
 		{Name: "count", Type: "float"}, // Changed from int to float
 		{Name: "status", Type: "int"},  // Changed from string to int
-	}
-
-	for _, f := range fields2 {
-		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
-	}
+	})
 
 	t.Run("migrate table", func(t *testing.T) {
 		require.NoError(t, sink.migrateTable(name, fields2), "Failed to migrate table")
 		verifySqliteDB(t, sink, name, fields2)
 	})
+}
+
+func TestSQLiteSink_insertData(t *testing.T) {
+	sink := &SQLiteSink{Path: ":memory:"}
+	require.NoError(t, sink.Open(), "Failed to open SQLite database")
+	defer sink.Close()
+
+	name := "test_insert"
+	fields := initFields(t, []*field.Field{
+		{
+			Name: "timestamp",
+			Timestamp: &field.TimestampFormat{
+				Format: "2006-01-02 15:04:05",
+			},
+		},
+		{Name: "level", Type: "string"},
+		{Name: "message", Type: "string"},
+		{Name: "count", Type: "int"},
+		{Name: "value", Type: "float"},
+	})
+
+	// Create the table
+	require.NoError(t, sink.createTable(name, fields), "Failed to create table")
+
+	// Test inserting data
+	testData := map[string]any{
+		"timestamp": int64(1648735200000),
+		"level":     "info",
+		"message":   "test message",
+		"count":     42,
+		"value":     3.14,
+	}
+
+	// Insert the data
+	err := sink.insertData(name, testData)
+	require.NoError(t, err, "Failed to insert data")
+
+	// Verify the data was inserted correctly
+	row := sink.db.QueryRow(fmt.Sprintf("SELECT timestamp, level, message, count, value FROM `%s` LIMIT 1", name))
+
+	var (
+		timestamp int64
+		level     string
+		message   string
+		count     int
+		value     float64
+	)
+
+	err = row.Scan(&timestamp, &level, &message, &count, &value)
+	require.NoError(t, err, "Failed to query inserted data")
+
+	require.Equal(t, testData["timestamp"], timestamp, "Timestamp value mismatch")
+	require.Equal(t, testData["level"], level, "Level value mismatch")
+	require.Equal(t, testData["message"], message, "Message value mismatch")
+	require.Equal(t, testData["count"], count, "Count value mismatch")
+	require.Equal(t, testData["value"], value, "Value value mismatch")
+}
+
+func initFields(t *testing.T, fields []*field.Field) []*field.Field {
+	for _, f := range fields {
+		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
+	}
+
+	return fields
 }
 
 // verifyTableStructure checks that the table was created with the correct columns
