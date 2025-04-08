@@ -53,6 +53,12 @@ func getColumns(db *sql.DB, name string) (map[string]string, error) {
 		if err := rows.Scan(&cid, &name, &ctype, &notnull, &dflt, &pk); err != nil {
 			return nil, fmt.Errorf("scan column info: %w", err)
 		}
+
+		// Ignore internal columns
+		if strings.HasPrefix(name, "_") {
+			continue
+		}
+
 		columns[name] = ctype
 	}
 
@@ -79,13 +85,6 @@ func migrateTable(db *sql.DB, name string, fields []*field.Field) error {
 	currentColumns, err := getColumns(db, name)
 	if err != nil {
 		return fmt.Errorf("get columns: %w", err)
-	}
-
-	// Ignore internal columns
-	for currentName, _ := range currentColumns {
-		if strings.HasPrefix(currentName, "_") {
-			delete(currentColumns, currentName)
-		}
 	}
 
 	desiredColumns := make(map[string]string)
