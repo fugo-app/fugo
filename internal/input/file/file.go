@@ -27,6 +27,8 @@ type FileConfig struct {
 var globalFileConfig *FileConfig
 
 func (fc *FileConfig) Open() error {
+	globalFileConfig = fc
+
 	if fc.Offsets != "" {
 		dir := filepath.Dir(fc.Offsets)
 		if err := os.MkdirAll(dir, 0755); err != nil {
