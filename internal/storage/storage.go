@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"io"
 	"path/filepath"
 
 	"github.com/fugo-app/fugo/internal/field"
@@ -11,6 +12,7 @@ type StorageDriver interface {
 	Close() error
 	Migrate(string, []*field.Field) error
 	Write(string, map[string]any)
+	Query(io.Writer, *Query) error
 }
 
 type StorageConfig struct {
@@ -20,33 +22,37 @@ type StorageConfig struct {
 }
 
 // InitDefault initializes the default storage configuration
-func (s *StorageConfig) InitDefault(dir string) {
-	s.SQLite = &SQLiteStorage{
+func (sc *StorageConfig) InitDefault(dir string) {
+	sc.SQLite = &SQLiteStorage{
 		Path: filepath.Join(dir, "fugo.db"),
 	}
 }
 
-func (s *StorageConfig) Open() error {
-	if s.SQLite != nil {
-		if err := s.SQLite.Open(); err != nil {
+func (sc *StorageConfig) Open() error {
+	if sc.SQLite != nil {
+		if err := sc.SQLite.Open(); err != nil {
 			return err
 		}
-		s.inner = s.SQLite
+		sc.inner = sc.SQLite
 	} else {
-		s.inner = &DummyStorage{}
+		sc.inner = &DummyStorage{}
 	}
 
 	return nil
 }
 
-func (s *StorageConfig) Close() error {
-	return s.inner.Close()
+func (sc *StorageConfig) Close() error {
+	return sc.inner.Close()
 }
 
-func (s *StorageConfig) Migrate(table string, fields []*field.Field) error {
-	return s.inner.Migrate(table, fields)
+func (sc *StorageConfig) Migrate(table string, fields []*field.Field) error {
+	return sc.inner.Migrate(table, fields)
 }
 
-func (s *StorageConfig) Write(table string, data map[string]any) {
-	s.inner.Write(table, data)
+func (sc *StorageConfig) Write(table string, data map[string]any) {
+	sc.inner.Write(table, data)
+}
+
+func (sc *StorageConfig) Query(w io.Writer, q *Query) error {
+	return sc.inner.Query(w, q)
 }

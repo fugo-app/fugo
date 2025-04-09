@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -115,6 +116,11 @@ func (ss *SQLiteStorage) Migrate(name string, fields []*field.Field) error {
 
 func (ss *SQLiteStorage) Write(name string, data map[string]any) {
 	ss.insertQueue <- &insertQueueItem{name, data}
+}
+
+func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
+	// TODO: process query and return jsonl
+	return nil
 }
 
 func (ss *SQLiteStorage) getSqlType(f *field.Field) string {

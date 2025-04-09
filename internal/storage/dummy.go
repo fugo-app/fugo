@@ -3,6 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 
 	"github.com/fugo-app/fugo/internal/field"
 )
@@ -17,4 +18,8 @@ func (DummyStorage) Migrate(name string, fields []*field.Field) error { return n
 func (DummyStorage) Write(name string, data map[string]any) {
 	line, _ := json.Marshal(data)
 	fmt.Println(name, string(line))
+}
+
+func (DummyStorage) Query(w io.Writer, q *Query) error {
+	return nil
 }

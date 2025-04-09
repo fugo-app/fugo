@@ -128,6 +128,9 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	w.Header().Set("Content-Type", "application/x-ndjson")
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("{}"))
+	if err := sc.storage.Query(w, query); err != nil {
+		log.Printf("Error sending query response: %v", err)
+	}
 }
