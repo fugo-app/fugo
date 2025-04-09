@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fugo-app/fugo/internal/source"
+	"github.com/fugo-app/fugo/pkg/debounce"
 )
 
 type fileWorker struct {
@@ -17,8 +18,8 @@ type fileWorker struct {
 	parser    fileParser
 	processor source.Processor
 
-	debounce chan struct{}
-	stop     chan struct{}
+	offset   int64
+	debounce *debounce.Debounce
 }
 
 func newFileWorker(
@@ -32,58 +33,27 @@ func newFileWorker(
 		ext:       ext,
 		parser:    parser,
 		processor: processor,
-		debounce:  make(chan struct{}, 1),
-		stop:      make(chan struct{}),
+		offset:    getOffset(path),
+		debounce:  nil,
 	}, nil
 }
 
 func (fw *fileWorker) Start() {
-	go fw.watch()
+	delay := 250 * time.Millisecond
+	fw.debounce = debounce.NewDebounce(fw.tail, delay, true)
+	fw.debounce.Start()
 }
 
 func (fw *fileWorker) Stop() {
-	close(fw.stop)
+	if fw.debounce != nil {
+		fw.debounce.Stop()
+		fw.debounce = nil
+	}
 }
 
 // Handle pushes the task to the debouncer
 func (fw *fileWorker) Handle() {
-	select {
-	case fw.debounce <- struct{}{}:
-	default:
-	}
-}
-
-func (fw *fileWorker) watch() {
-	// check for new lines
-	fw.tail()
-
-	// Timer to debounce file changes
-	// Wait for 250ms after the first signal before processing
-	timer := time.NewTimer(0)
-	if !timer.Stop() {
-		<-timer.C
-	}
-	timerActive := false
-
-	for {
-		select {
-		case <-fw.stop:
-			if timerActive {
-				timer.Stop()
-			}
-			return
-
-		case <-fw.debounce:
-			if !timerActive {
-				timer.Reset(250 * time.Millisecond)
-				timerActive = true
-			}
-
-		case <-timer.C:
-			fw.tail()
-			timerActive = false
-		}
-	}
+	fw.debounce.Emit()
 }
 
 func (fw *fileWorker) tail() {
@@ -99,7 +69,7 @@ func (fw *fileWorker) tail() {
 		return
 	}
 
-	offset := getOffset(fw.path)
+	offset := fw.offset
 
 	// Check if file has been truncated (logrotate case)
 	if offset > fileInfo.Size() {
@@ -144,5 +114,6 @@ func (fw *fileWorker) tail() {
 	}
 
 	// Update the offset for next run
+	fw.offset = offset
 	setOffset(fw.path, offset)
 }
