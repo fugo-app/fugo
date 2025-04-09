@@ -13,10 +13,14 @@ server:
 storage:
   sqlite:
     path: /var/lib/fugo/fugo.db
+
+file_input:
+  offsets: /var/lib/fugo/offsets.yaml
 ```
 
 - `server`: Configuration for the HTTP API server.
 - `storage`: Configuration for the log storage backend.
+- `file_input`: Configuration for file-based input.
 
 Options for HTTP API server:
 
@@ -28,6 +32,10 @@ Options for SQLite storage:
 - `journal_mode`: SQLite journal mode. Default is `wal`. Other options are `delete`, `truncate`, `persist`, `memory`, and `off`.
 - `synchronous`: SQLite synchronous mode. Default is `normal`. Other options are `full`, `off`, and `extra`.
 - `cache_size`: SQLite cache size in pages. Default is `10000` pages. Use negative values for kibibytes.
+
+Options for file-based input:
+
+- `offsets`: Path to the offsets file. This file stores the last read position for each log file.
 
 ## Agents Configuration
 

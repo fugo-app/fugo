@@ -14,14 +14,16 @@ import (
 
 	"github.com/fugo-app/fugo/internal/agent"
 	"github.com/fugo-app/fugo/internal/server"
+	"github.com/fugo-app/fugo/internal/source/file"
 	"github.com/fugo-app/fugo/internal/storage"
 )
 
 var Version = "0.0.0"
 
 type appInstance struct {
-	Server  server.ServerConfig   `yaml:"server"`
-	Storage storage.StorageConfig `yaml:"storage"`
+	Server    server.ServerConfig   `yaml:"server"`
+	Storage   storage.StorageConfig `yaml:"storage"`
+	FileInput file.FileConfig       `yaml:"file_input"`
 
 	agents map[string]*agent.Agent
 }
@@ -124,6 +126,10 @@ func (a *appInstance) start(configFile string) error {
 		return fmt.Errorf("open server: %w", err)
 	}
 
+	if err := a.FileInput.Open(); err != nil {
+		return fmt.Errorf("open file-based input: %w", err)
+	}
+
 	if err := a.loadAgents(configDir); err != nil {
 		return fmt.Errorf("loading agents: %w", err)
 	}
@@ -147,5 +153,9 @@ func (a *appInstance) stop() {
 
 	if err := a.Storage.Close(); err != nil {
 		log.Println("failed to close storage:", err)
+	}
+
+	if err := a.FileInput.Close(); err != nil {
+		log.Println("failed to close file-based input:", err)
 	}
 }
