@@ -37,17 +37,21 @@ const (
 	// String Operators
 	Exact
 	Like
+	Prefix
+	Suffix
 )
 
 var opmap = map[string]QueryOperatorType{
-	"eq":    Eq,
-	"ne":    Ne,
-	"lt":    Lt,
-	"lte":   Lte,
-	"gt":    Gt,
-	"gte":   Gte,
-	"exact": Exact,
-	"like":  Like,
+	"eq":     Eq,
+	"ne":     Ne,
+	"lt":     Lt,
+	"lte":    Lte,
+	"gt":     Gt,
+	"gte":    Gte,
+	"exact":  Exact,
+	"like":   Like,
+	"prefix": Prefix,
+	"suffix": Suffix,
 }
 
 func NewQuery(name string) *Query {
