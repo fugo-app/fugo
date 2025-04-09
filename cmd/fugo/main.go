@@ -59,8 +59,8 @@ func main() {
 	<-signalCh
 }
 
-func (a *appInstance) loadAgents(configPath string) error {
-	agentsDir := filepath.Join(configPath, "agents")
+func (a *appInstance) loadAgents(configDir string) error {
+	agentsDir := filepath.Join(configDir, "agents")
 
 	entries, err := os.ReadDir(agentsDir)
 	if err != nil {
@@ -110,6 +110,27 @@ func (a *appInstance) loadAgents(configPath string) error {
 	return nil
 }
 
+func (a *appInstance) saveAgents(configDir string) error {
+	agentsDir := filepath.Join(configDir, "agents")
+
+	if err := os.MkdirAll(agentsDir, 0755); err != nil {
+		return fmt.Errorf("create agents directory: %w", err)
+	}
+
+	for name, agent := range a.agents {
+		agentFile := filepath.Join(agentsDir, name+".yaml")
+		agentData, err := yaml.Marshal(agent)
+		if err != nil {
+			return fmt.Errorf("marshal agent (%s): %w", name, err)
+		}
+		if err := os.WriteFile(agentFile, agentData, 0644); err != nil {
+			return fmt.Errorf("write agent (%s): %w", name, err)
+		}
+	}
+
+	return nil
+}
+
 func (a *appInstance) saveConfig(configFile string) error {
 	configDir := filepath.Dir(configFile)
 
@@ -124,6 +145,10 @@ func (a *appInstance) saveConfig(configFile string) error {
 
 	if err := os.WriteFile(configFile, configData, 0644); err != nil {
 		return fmt.Errorf("write config: %w", err)
+	}
+
+	if err := a.saveAgents(configDir); err != nil {
+		return fmt.Errorf("save agents: %w", err)
 	}
 
 	return nil

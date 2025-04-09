@@ -18,6 +18,9 @@ type FileConfig struct {
 	// Example: "/var/lib/fugo/offsets.yaml"
 	Offsets string `yaml:"offsets,omitempty"`
 
+	// Limit the number of lines to read from the file on first read.
+	Limit int `yaml:"limit,omitempty"`
+
 	mutex   sync.Mutex
 	offsets map[string]int64
 
@@ -28,6 +31,7 @@ var globalFileConfig *FileConfig
 
 func (fc *FileConfig) InitDefault(dir string) {
 	fc.Offsets = filepath.Join(dir, "offsets.yaml")
+	fc.Limit = 100
 }
 
 func (fc *FileConfig) Open() error {
@@ -77,7 +81,12 @@ func (fc *FileConfig) getOffset(path string) int64 {
 		return offset
 	}
 
-	return 0
+	if fc.Limit == 0 {
+		return 0
+	}
+
+	// File not found so get limited offset
+	return getFileOffset(path, fc.Limit)
 }
 
 func (fc *FileConfig) setOffset(path string, offset int64) {
@@ -122,4 +131,60 @@ func getOffset(path string) int64 {
 
 func setOffset(path string, offset int64) {
 	globalFileConfig.setOffset(path, offset)
+}
+
+func getFileOffset(path string, lines int) int64 {
+	file, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return 0
+	}
+
+	fileSize := stat.Size()
+	if fileSize == 0 {
+		return 0 // Empty file
+	}
+
+	const bufferSize int64 = 4096
+	buffer := make([]byte, bufferSize)
+
+	newlineCount := 0
+	offset := fileSize - 1
+
+	if _, err := file.ReadAt(buffer[:1], offset); err == nil {
+		if buffer[0] == '\n' {
+			newlineCount = 1
+		}
+	}
+
+	for offset > 0 && newlineCount <= lines {
+		readSize := bufferSize
+		if offset < bufferSize {
+			readSize = offset
+		}
+
+		start := offset - readSize
+		_, err := file.ReadAt(buffer[:readSize], start)
+		if err != nil {
+			return 0
+		}
+
+		offset -= readSize
+
+		for i := readSize - 1; i >= 0; i-- {
+			if buffer[i] == '\n' {
+				newlineCount += 1
+				if newlineCount > lines {
+					return offset + i + 1
+				}
+			}
+		}
+	}
+
+	return 0
 }

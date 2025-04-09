@@ -16,6 +16,7 @@ storage:
 
 file_input:
   offsets: /var/lib/fugo/offsets.yaml
+  limit: 100
 ```
 
 - `server`: Configuration for the HTTP API server.
@@ -36,6 +37,7 @@ Options for SQLite storage:
 Options for file-based input:
 
 - `offsets`: Path to the offsets file. This file stores the last read position for each log file.
+- `limit`: Maximum number of lines to read when the log file is opened for the first time. Default is `100`. Set to `0` for no limit.
 
 ## Agents Configuration
 
