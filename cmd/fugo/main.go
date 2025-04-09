@@ -46,11 +46,9 @@ func main() {
 	log.SetFlags(0)
 
 	a := new(appInstance)
-	if err := a.init(*configFlag); err != nil {
+	if err := a.start(*configFlag); err != nil {
 		log.Fatalln("failed to init app:", err)
 	}
-
-	a.start()
 	defer a.stop()
 
 	signalCh := make(chan os.Signal, 1)
@@ -106,7 +104,7 @@ func (a *appInstance) loadAgents(configPath string) error {
 	return nil
 }
 
-func (a *appInstance) init(configFile string) error {
+func (a *appInstance) start(configFile string) error {
 	configDir := filepath.Dir(configFile)
 
 	configData, err := os.ReadFile(configFile)
@@ -130,14 +128,12 @@ func (a *appInstance) init(configFile string) error {
 		return fmt.Errorf("loading agents: %w", err)
 	}
 
-	return nil
-}
-
-func (a *appInstance) start() {
 	// Start all agents
 	for _, agent := range a.agents {
 		agent.Start()
 	}
+
+	return nil
 }
 
 func (a *appInstance) stop() {
