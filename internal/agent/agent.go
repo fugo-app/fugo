@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/fugo-app/fugo/internal/field"
-	"github.com/fugo-app/fugo/internal/source/file"
+	"github.com/fugo-app/fugo/internal/input/file"
 	"github.com/fugo-app/fugo/internal/storage"
 )
 
@@ -14,7 +14,7 @@ type Agent struct {
 	// Fields to include in the final log record.
 	Fields []*field.Field `yaml:"fields"`
 
-	// File-based log source.
+	// File-based input.
 	File *file.FileWatcher `yaml:"file,omitempty"`
 
 	storage storage.StorageDriver
@@ -60,7 +60,7 @@ func (a *Agent) Stop() {
 	}
 }
 
-// Process receives raw data from source and converts to the logs record.
+// Process receives raw data from input and converts to the logs record.
 func (a *Agent) Process(data map[string]string) {
 	if len(data) == 0 {
 		return

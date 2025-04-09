@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/fugo-app/fugo/internal/source"
+	"github.com/fugo-app/fugo/internal/input"
 	"github.com/fugo-app/fugo/pkg/debounce"
 )
 
@@ -16,7 +16,7 @@ type fileWorker struct {
 	path      string
 	ext       map[string]string
 	parser    fileParser
-	processor source.Processor
+	processor input.Processor
 
 	offset   int64
 	debounce *debounce.Debounce
@@ -26,7 +26,7 @@ func newFileWorker(
 	path string,
 	ext map[string]string,
 	parser fileParser,
-	processor source.Processor,
+	processor input.Processor,
 ) (*fileWorker, error) {
 	return &fileWorker{
 		path:      path,

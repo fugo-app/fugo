@@ -13,8 +13,8 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/fugo-app/fugo/internal/agent"
+	"github.com/fugo-app/fugo/internal/input/file"
 	"github.com/fugo-app/fugo/internal/server"
-	"github.com/fugo-app/fugo/internal/source/file"
 	"github.com/fugo-app/fugo/internal/storage"
 )
 

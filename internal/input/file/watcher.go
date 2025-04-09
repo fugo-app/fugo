@@ -10,7 +10,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 
-	"github.com/fugo-app/fugo/internal/source"
+	"github.com/fugo-app/fugo/internal/input"
 )
 
 // FileWatcher is an implementation of the file-based log agent.
@@ -32,13 +32,13 @@ type FileWatcher struct {
 	dir       string         // Base directory for the path
 	re        *regexp.Regexp // Regex to match the file name
 	parser    fileParser     // Line parser
-	processor source.Processor
+	processor input.Processor
 	workers   map[string]*fileWorker
 
 	stop chan struct{}
 }
 
-func (fw *FileWatcher) Init(processor source.Processor) error {
+func (fw *FileWatcher) Init(processor input.Processor) error {
 	if fw.Path == "" {
 		return fmt.Errorf("path is required")
 	}
