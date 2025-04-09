@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"path/filepath"
+
 	"github.com/fugo-app/fugo/internal/field"
 )
 
@@ -15,6 +17,13 @@ type StorageConfig struct {
 	SQLite *SQLiteStorage `yaml:"sqlite,omitempty"`
 
 	inner StorageDriver
+}
+
+// InitDefault initializes the default storage configuration
+func (s *StorageConfig) InitDefault(dir string) {
+	s.SQLite = &SQLiteStorage{
+		Path: filepath.Join(dir, "fugo.db"),
+	}
 }
 
 func (s *StorageConfig) Open() error {

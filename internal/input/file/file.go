@@ -26,6 +26,10 @@ type FileConfig struct {
 
 var globalFileConfig *FileConfig
 
+func (fc *FileConfig) InitDefault(dir string) {
+	fc.Offsets = filepath.Join(dir, "offsets.yaml")
+}
+
 func (fc *FileConfig) Open() error {
 	globalFileConfig = fc
 

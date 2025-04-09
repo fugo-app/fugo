@@ -15,11 +15,17 @@ import (
 
 type ServerConfig struct {
 	// Listen address and port for HTTP server
-	// Example: "127.0.0.1:8080" or ":8080"
+	// Example: "127.0.0.1:2221" or ":2221"
 	Listen string `yaml:"listen"`
 
 	server  *http.Server
 	storage storage.StorageDriver
+}
+
+const defaultListen = "127.0.0.1:2221"
+
+func (sc *ServerConfig) InitDefault() {
+	sc.Listen = defaultListen
 }
 
 func (sc *ServerConfig) Open(storage storage.StorageDriver) error {
@@ -27,7 +33,7 @@ func (sc *ServerConfig) Open(storage storage.StorageDriver) error {
 
 	listen := sc.Listen
 	if listen == "" {
-		listen = "127.0.0.1:3331"
+		listen = defaultListen
 	}
 
 	mux := http.NewServeMux()

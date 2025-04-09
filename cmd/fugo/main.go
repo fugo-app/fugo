@@ -64,6 +64,10 @@ func (a *appInstance) loadAgents(configPath string) error {
 
 	entries, err := os.ReadDir(agentsDir)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+
 		return err
 	}
 
@@ -106,12 +110,43 @@ func (a *appInstance) loadAgents(configPath string) error {
 	return nil
 }
 
+func (a *appInstance) saveConfig(configFile string) error {
+	configDir := filepath.Dir(configFile)
+
+	if err := os.MkdirAll(configDir, 0755); err != nil {
+		return fmt.Errorf("create config directory: %w", err)
+	}
+
+	configData, err := yaml.Marshal(a)
+	if err != nil {
+		return fmt.Errorf("marshal config: %w", err)
+	}
+
+	if err := os.WriteFile(configFile, configData, 0644); err != nil {
+		return fmt.Errorf("write config: %w", err)
+	}
+
+	return nil
+}
+
 func (a *appInstance) start(configFile string) error {
 	configDir := filepath.Dir(configFile)
 
 	configData, err := os.ReadFile(configFile)
 	if err != nil {
-		return fmt.Errorf("read config: %w", err)
+		if os.IsNotExist(err) {
+			// Create default config file
+			libDir := "/var/lib/fugo"
+			a.Server.InitDefault()
+			a.Storage.InitDefault(libDir)
+			a.FileInput.InitDefault(libDir)
+
+			if err := a.saveConfig(configFile); err != nil {
+				return fmt.Errorf("save default config: %w", err)
+			}
+		} else {
+			return fmt.Errorf("read config: %w", err)
+		}
 	}
 
 	if err := yaml.Unmarshal(configData, a); err != nil {
