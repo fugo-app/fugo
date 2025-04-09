@@ -38,7 +38,7 @@ func (sc *ServerConfig) Open(storage storage.StorageDriver) error {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/api/query", sc.handleQuery)
+	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
 
 	sc.server = &http.Server{
 		Addr:    listen,
@@ -77,10 +77,16 @@ func (sc *ServerConfig) Close() error {
 }
 
 func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		http.Error(w, "Missing name parameter", http.StatusBadRequest)
+		return
+	}
+
 	// Get query parameters from URL
 	queryParams := r.URL.Query()
 
-	query := storage.Query{}
+	query := storage.NewQuery(name)
 
 	// Iterate through query parameters
 	for key, values := range queryParams {
@@ -89,14 +95,11 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 		if !ok {
 			switch key {
-			case "name":
-				query.SetName(value)
 			case "limit":
 				if v, err := strconv.ParseInt(value, 10, 64); err == nil {
 					query.SetLimit(v)
 				} else {
-					w.WriteHeader(http.StatusBadRequest)
-					fmt.Fprintln(w, "Invalid limit value")
+					http.Error(w, "Invalid limit value", http.StatusBadRequest)
 					return
 				}
 			case "after":
@@ -104,8 +107,7 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 				if v, err := strconv.ParseInt(value, 16, 64); err == nil {
 					query.SetAfter(v)
 				} else {
-					w.WriteHeader(http.StatusBadRequest)
-					fmt.Fprintln(w, "Invalid after value")
+					http.Error(w, "Invalid after value", http.StatusBadRequest)
 					return
 				}
 			case "before":
@@ -113,15 +115,14 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 				if v, err := strconv.ParseInt(value, 16, 64); err == nil {
 					query.SetBefore(v)
 				} else {
-					w.WriteHeader(http.StatusBadRequest)
-					fmt.Fprintln(w, "Invalid before value")
+					http.Error(w, "Invalid before value", http.StatusBadRequest)
 					return
 				}
 			}
 		} else {
 			if err := query.SetFilter(key, op, value); err != nil {
-				w.WriteHeader(http.StatusBadRequest)
-				fmt.Fprintln(w, "Invalid filter operator for key", key)
+				message := fmt.Sprintf("Invalid filter operator for key %s", key)
+				http.Error(w, message, http.StatusBadRequest)
 				return
 			}
 		}

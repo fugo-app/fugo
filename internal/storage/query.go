@@ -50,8 +50,10 @@ var opmap = map[string]QueryOperatorType{
 	"like":  Like,
 }
 
-func (q *Query) SetName(name string) {
-	q.name = name
+func NewQuery(name string) *Query {
+	return &Query{
+		name: name,
+	}
 }
 
 func (q *Query) SetLimit(limit int64) {
