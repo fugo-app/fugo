@@ -39,16 +39,12 @@ func newFileWorker(
 }
 
 func (fw *fileWorker) Start() {
-	delay := 250 * time.Millisecond
-	fw.debounce = debounce.NewDebounce(fw.tail, delay, true)
+	fw.debounce = debounce.NewDebounce(fw.tail, 250*time.Millisecond, true)
 	fw.debounce.Start()
 }
 
 func (fw *fileWorker) Stop() {
-	if fw.debounce != nil {
-		fw.debounce.Stop()
-		fw.debounce = nil
-	}
+	fw.debounce.Stop()
 }
 
 // Handle pushes the task to the debouncer

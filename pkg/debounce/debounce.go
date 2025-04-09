@@ -1,6 +1,9 @@
 package debounce
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 type Debounce struct {
 	fn        func()
@@ -8,12 +11,13 @@ type Debounce struct {
 	stop      chan struct{}
 	delay     time.Duration
 	immediate bool
+	once      sync.Once
 }
 
 func NewDebounce(fn func(), delay time.Duration, immediate bool) *Debounce {
 	return &Debounce{
 		fn:        fn,
-		debounce:  make(chan struct{}),
+		debounce:  make(chan struct{}, 1),
 		stop:      make(chan struct{}),
 		delay:     delay,
 		immediate: immediate,
@@ -25,7 +29,13 @@ func (d *Debounce) Start() {
 }
 
 func (d *Debounce) Stop() {
-	close(d.stop)
+	if d == nil {
+		return
+	}
+
+	d.once.Do(func() {
+		close(d.stop)
+	})
 }
 
 func (d *Debounce) Emit() {
