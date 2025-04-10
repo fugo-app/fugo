@@ -298,11 +298,11 @@ func TestSQLiteStorage_Query(t *testing.T) {
 
 	// Insert test data
 	testData := []map[string]any{
-		{"message": "item1", "status": 200},
-		{"message": "item2", "status": 404},
-		{"message": "item3", "status": 403},
-		{"message": "item4", "status": 500},
-		{"message": "item5", "status": 400},
+		{"message": "apple pie", "status": 200},
+		{"message": "pineapple juice", "status": 404},
+		{"message": "grapefruit", "status": 403},
+		{"message": "apple", "status": 500},
+		{"message": "green apple", "status": 400},
 	}
 
 	for _, data := range testData {
@@ -318,11 +318,11 @@ func TestSQLiteStorage_Query(t *testing.T) {
 			name:     "query all records",
 			modifier: func(q *Query) {},
 			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "item1", Status: 200},
-				{Cursor: "0000000000000002", Message: "item2", Status: 404},
-				{Cursor: "0000000000000003", Message: "item3", Status: 403},
-				{Cursor: "0000000000000004", Message: "item4", Status: 500},
-				{Cursor: "0000000000000005", Message: "item5", Status: 400},
+				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
+				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
 			},
 		},
 		{
@@ -331,9 +331,9 @@ func TestSQLiteStorage_Query(t *testing.T) {
 				q.SetLimit(3)
 			},
 			want: []logRecord{
-				{Cursor: "0000000000000003", Message: "item3", Status: 403},
-				{Cursor: "0000000000000004", Message: "item4", Status: 500},
-				{Cursor: "0000000000000005", Message: "item5", Status: 400},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
 			},
 		},
 		{
@@ -346,8 +346,8 @@ func TestSQLiteStorage_Query(t *testing.T) {
 				q.SetAfter(2) // After second record
 			},
 			want: []logRecord{
-				{Cursor: "0000000000000003", Message: "item3", Status: 403},
-				{Cursor: "0000000000000004", Message: "item4", Status: 500},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
 			},
 		},
 		{
@@ -360,8 +360,8 @@ func TestSQLiteStorage_Query(t *testing.T) {
 				q.SetBefore(4) // Before fourth record
 			},
 			want: []logRecord{
-				{Cursor: "0000000000000002", Message: "item2", Status: 404},
-				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
 			},
 		},
 		{
@@ -370,7 +370,61 @@ func TestSQLiteStorage_Query(t *testing.T) {
 				q.SetFilter("status", "eq", "403")
 			},
 			want: []logRecord{
-				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
+			},
+		},
+		{
+			name: "ne filter",
+			modifier: func(q *Query) {
+				q.SetFilter("status", "ne", "403")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
+				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
+			},
+		},
+		{
+			name: "lt filter",
+			modifier: func(q *Query) {
+				q.SetFilter("status", "lt", "403")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
+			},
+		},
+		{
+			name: "lte filter",
+			modifier: func(q *Query) {
+				q.SetFilter("status", "lte", "403")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
+			},
+		},
+		{
+			name: "gt filter",
+			modifier: func(q *Query) {
+				q.SetFilter("status", "gt", "403")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+			},
+		},
+		{
+			name: "gte filter",
+			modifier: func(q *Query) {
+				q.SetFilter("status", "gte", "403")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
+				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
 			},
 		},
 	}
