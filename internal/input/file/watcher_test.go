@@ -17,6 +17,14 @@ func TestFileWatcher_WorkerManagement(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
 
+	// Config for file-based input
+	globalFileConfig := &FileConfig{
+		Offsets: filepath.Join(tempDir, "offsets.yaml"),
+	}
+	globalFileConfig.InitDefault(tempDir)
+	require.NoError(t, globalFileConfig.Open(), "failed to open file config")
+	defer globalFileConfig.Close()
+
 	var ok bool
 
 	// Create a watcher instance
@@ -68,6 +76,14 @@ func TestFileWatcher_WorkerManagement(t *testing.T) {
 func TestFileWatcher_MultipleWorkers(t *testing.T) {
 	// Create a temporary directory for the test
 	tempDir := t.TempDir()
+
+	// Config for file-based input
+	globalFileConfig := &FileConfig{
+		Offsets: filepath.Join(tempDir, "offsets.yaml"),
+	}
+	globalFileConfig.InitDefault(tempDir)
+	require.NoError(t, globalFileConfig.Open(), "failed to open file config")
+	defer globalFileConfig.Close()
 
 	var ok bool
 

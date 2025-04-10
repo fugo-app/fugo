@@ -42,6 +42,14 @@ func TestFileWorker_tail(t *testing.T) {
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "test.log")
 
+	// Config for file-based input
+	globalFileConfig := &FileConfig{
+		Offsets: filepath.Join(tempDir, "offsets.yaml"),
+	}
+	globalFileConfig.InitDefault(tempDir)
+	require.NoError(t, globalFileConfig.Open(), "failed to open file config")
+	defer globalFileConfig.Close()
+
 	// Write test data to the file
 	testData := "line1\nline2\nline3\n"
 	{
