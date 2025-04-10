@@ -427,6 +427,47 @@ func TestSQLiteStorage_Query(t *testing.T) {
 				{Cursor: "0000000000000004", Message: "apple", Status: 500},
 			},
 		},
+		{
+			name: "exact filter",
+			modifier: func(q *Query) {
+				q.SetFilter("message", "exact", "apple")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+			},
+		},
+		{
+			name: "like filter",
+			modifier: func(q *Query) {
+				q.SetFilter("message", "like", "apple")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
+				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
+			},
+		},
+		{
+			name: "prefix filter",
+			modifier: func(q *Query) {
+				q.SetFilter("message", "prefix", "apple")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+			},
+		},
+		{
+			name: "suffix filter",
+			modifier: func(q *Query) {
+				q.SetFilter("message", "suffix", "apple")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000004", Message: "apple", Status: 500},
+				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
+			},
+		},
 	}
 
 	for _, tt := range tests {
