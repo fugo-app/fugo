@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -31,6 +33,7 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 
 	t.Run("create table", func(t *testing.T) {
 		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
+		verifySqliteDB(t, storage, name, fields)
 	})
 
 	t.Run("check table exists", func(t *testing.T) {
@@ -75,6 +78,8 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 
 			if name == "_cursor" {
 				hasCursor = true
+
+				require.Equal(t, 1, pk, "Cursor column should be primary key")
 			}
 		}
 
@@ -269,6 +274,122 @@ func TestSQLiteStorage_insertData(t *testing.T) {
 	require.Equal(t, testData["message"], message, "Message value mismatch")
 	require.Equal(t, testData["count"], count, "Count value mismatch")
 	require.Equal(t, testData["value"], value, "Value value mismatch")
+}
+
+func TestSQLiteStorage_Query(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
+
+	name := "test_query"
+	fields := initFields(t, []*field.Field{
+		{Name: "message", Type: "string"},
+		{Name: "status", Type: "int"},
+	})
+
+	// Create the table
+	require.NoError(t, storage.createTable(name, fields), "Failed to create table")
+
+	type logRecord struct {
+		Cursor  int64  `json:"_cursor"`
+		Message string `json:"message"`
+		Status  int    `json:"status"`
+	}
+
+	// Insert test data
+	testData := []map[string]any{
+		{"message": "item1", "status": 200},
+		{"message": "item2", "status": 404},
+		{"message": "item3", "status": 403},
+		{"message": "item4", "status": 500},
+		{"message": "item5", "status": 400},
+	}
+
+	for _, data := range testData {
+		require.NoError(t, storage.insertData(name, data), "Failed to insert test data")
+	}
+
+	t.Run("query all records", func(t *testing.T) {
+		query := NewQuery(name)
+		buf := new(bytes.Buffer)
+
+		require.NoError(t, storage.Query(buf, query), "Failed to execute query")
+
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
+		require.Len(t, lines, 5, "Expected 5 records in output") // 5 records
+
+		var record logRecord
+		for i, line := range lines {
+			offset := i
+			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
+			require.Equal(t, int64(offset+1), record.Cursor, "Cursor value mismatch for record %d", i)
+			require.Equal(t, testData[offset]["message"], record.Message, "Message value mismatch for record %d", i)
+			require.Equal(t, testData[offset]["status"], record.Status, "Status value mismatch for record %d", i)
+		}
+	})
+
+	t.Run("query with limit", func(t *testing.T) {
+		// Input: 1, 2, 3, 4, 5
+		// Output with limit: 3, 4, 5
+		query := NewQuery(name)
+		query.SetLimit(3)
+		buf := new(bytes.Buffer)
+
+		require.NoError(t, storage.Query(buf, query), "Failed to execute query")
+
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
+		require.Len(t, lines, 3, "Expected 3 records in output")
+
+		var record logRecord
+		for i, line := range lines {
+			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
+			require.Equal(t, int64(i+3), record.Cursor, "Cursor value mismatch for record %d", i)
+			require.Equal(t, testData[i+2]["message"], record.Message, "Message value mismatch for record %d", i)
+			require.Equal(t, testData[i+2]["status"], record.Status, "Status value mismatch for record %d", i)
+		}
+	})
+
+	t.Run("query with after cursor", func(t *testing.T) {
+		// Input: 1, 2, 3, 4, 5
+		// Output without limit: 3, 4, 5
+		// Output with limit: 3, 4
+		query := NewQuery(name)
+		query.SetLimit(2)
+		query.SetAfter(2) // After second record
+		buf := new(bytes.Buffer)
+
+		require.NoError(t, storage.Query(buf, query), "Failed to execute query with after cursor")
+
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
+		require.Len(t, lines, 2, "Expected 2 records after cursor")
+
+		var record logRecord
+		for i, line := range lines {
+			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
+			require.Equal(t, int64(i+3), record.Cursor, "Cursor value mismatch for record %d", i)
+		}
+	})
+
+	t.Run("query with before cursor", func(t *testing.T) {
+		// Input: 1, 2, 3, 4, 5
+		// Output without limit: 1, 2, 3
+		// Output with limit: 2, 3
+		query := NewQuery(name)
+		query.SetLimit(2)
+		query.SetBefore(4) // Before fourth record
+		buf := new(bytes.Buffer)
+
+		require.NoError(t, storage.Query(buf, query), "Failed to execute query with before cursor")
+
+		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
+		require.Len(t, lines, 2, "Expected 2 records after cursor")
+
+		var record logRecord
+		for i, line := range lines {
+			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
+			require.Equal(t, int64(i+2), record.Cursor, "Cursor value mismatch for record %d", i)
+		}
+	})
 }
 
 func initFields(t *testing.T, fields []*field.Field) []*field.Field {

@@ -1,7 +1,9 @@
 package storage
 
 import (
+	"bufio"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -119,8 +121,96 @@ func (ss *SQLiteStorage) Write(name string, data map[string]any) {
 }
 
 func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
-	// TODO: process query and return jsonl
-	return nil
+	query := fmt.Sprintf("SELECT * FROM `%s`", q.name)
+
+	var args []any
+	var conditions []string
+
+	if q.after.Valid {
+		conditions = append(conditions, "_cursor > ?")
+		args = append(args, q.after.Int64)
+	} else if q.before.Valid {
+		conditions = append(conditions, "_cursor < ?")
+		args = append(args, q.before.Int64)
+	}
+
+	if len(conditions) > 0 {
+		query += " WHERE " + strings.Join(conditions, " AND ")
+	}
+
+	if q.limit.Valid {
+		if q.after.Valid {
+			query += " ORDER BY _cursor ASC LIMIT ?"
+		} else {
+			query += " ORDER BY _cursor DESC LIMIT ?"
+			query = "SELECT * FROM ( " + query + " ) temp ORDER BY _cursor ASC"
+		}
+		args = append(args, q.limit.Int64)
+	}
+
+	rows, err := ss.db.Query(query, args...)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	out := bufio.NewWriter(w)
+	defer out.Flush()
+
+	for rows.Next() {
+		values := make([]any, len(columns))
+		pointers := make([]any, len(columns))
+		for i := range values {
+			pointers[i] = &values[i]
+		}
+
+		if err := rows.Scan(pointers...); err != nil {
+			return err
+		}
+
+		out.WriteByte('{')
+
+		for i, col := range columns {
+			val := values[i]
+
+			if i > 0 {
+				out.WriteByte(',')
+			}
+
+			out.WriteByte('"')
+			out.WriteString(col)
+			out.WriteByte('"')
+			out.WriteByte(':')
+
+			switch v := val.(type) {
+			case []byte:
+				s, _ := json.Marshal(string(v))
+				out.Write(s)
+			case int64:
+				fmt.Fprintf(out, "%d", v)
+			case float64:
+				fmt.Fprintf(out, "%f", v)
+			case string:
+				s, _ := json.Marshal(v)
+				out.Write(s)
+			case nil:
+				out.WriteString("null")
+			default:
+				out.WriteString("null")
+			}
+		}
+
+		out.WriteByte('}')
+		out.WriteByte('\n')
+		out.Flush()
+	}
+
+	return rows.Err()
 }
 
 func (ss *SQLiteStorage) getSqlType(f *field.Field) string {
