@@ -133,6 +133,44 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 		args = append(args, q.before.Int64)
 	}
 
+	for _, filter := range q.filters {
+		switch filter.op {
+		case Eq:
+			conditions = append(conditions, fmt.Sprintf("`%s` = ?", filter.name))
+			args = append(args, filter.ival)
+		case Ne:
+			conditions = append(conditions, fmt.Sprintf("`%s` != ?", filter.name))
+			args = append(args, filter.ival)
+		case Lt:
+			conditions = append(conditions, fmt.Sprintf("`%s` < ?", filter.name))
+			args = append(args, filter.ival)
+		case Lte:
+			conditions = append(conditions, fmt.Sprintf("`%s` <= ?", filter.name))
+			args = append(args, filter.ival)
+		case Gt:
+			conditions = append(conditions, fmt.Sprintf("`%s` > ?", filter.name))
+			args = append(args, filter.ival)
+		case Gte:
+			conditions = append(conditions, fmt.Sprintf("`%s` >= ?", filter.name))
+			args = append(args, filter.ival)
+		case Exact:
+			conditions = append(conditions, fmt.Sprintf("`%s` = ?", filter.name))
+			args = append(args, filter.sval)
+		case Like:
+			conditions = append(conditions, fmt.Sprintf("`%s` LIKE ?", filter.name))
+			value := "%" + filter.sval + "%"
+			args = append(args, value)
+		case Prefix:
+			conditions = append(conditions, fmt.Sprintf("`%s` LIKE ?", filter.name))
+			value := filter.sval + "%"
+			args = append(args, value)
+		case Suffix:
+			conditions = append(conditions, fmt.Sprintf("`%s` LIKE ?", filter.name))
+			value := "%" + filter.sval
+			args = append(args, value)
+		}
+	}
+
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}

@@ -13,7 +13,7 @@ type Query struct {
 	after  sql.NullInt64 // After Cursor
 	before sql.NullInt64 // Before Cursor
 
-	filter []*QueryOperator
+	filters []*QueryOperator
 }
 
 type QueryOperator struct {
@@ -90,9 +90,9 @@ func (q *Query) SetFilter(name string, op string, val string) error {
 		if err != nil {
 			return fmt.Errorf("invalid int value: %s", val)
 		}
-		q.filter = append(q.filter, &QueryOperator{name: name, op: opType, ival: ival})
+		q.filters = append(q.filters, &QueryOperator{name: name, op: opType, ival: ival})
 	} else {
-		q.filter = append(q.filter, &QueryOperator{name: name, op: opType, sval: val})
+		q.filters = append(q.filters, &QueryOperator{name: name, op: opType, sval: val})
 	}
 
 	return nil

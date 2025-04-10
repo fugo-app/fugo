@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -310,92 +309,89 @@ func TestSQLiteStorage_Query(t *testing.T) {
 		require.NoError(t, storage.insertData(name, data), "Failed to insert test data")
 	}
 
-	t.Run("query all records", func(t *testing.T) {
-		query := NewQuery(name)
-		buf := new(bytes.Buffer)
+	tests := []struct {
+		name     string
+		modifier func(q *Query)
+		want     []logRecord
+	}{
+		{
+			name:     "query all records",
+			modifier: func(q *Query) {},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Message: "item1", Status: 200},
+				{Cursor: "0000000000000002", Message: "item2", Status: 404},
+				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+				{Cursor: "0000000000000004", Message: "item4", Status: 500},
+				{Cursor: "0000000000000005", Message: "item5", Status: 400},
+			},
+		},
+		{
+			name: "query with limit",
+			modifier: func(q *Query) {
+				q.SetLimit(3)
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+				{Cursor: "0000000000000004", Message: "item4", Status: 500},
+				{Cursor: "0000000000000005", Message: "item5", Status: 400},
+			},
+		},
+		{
+			// Input: 1, 2, 3, 4, 5
+			// Output without limit: 3, 4, 5
+			// Output with limit: 3, 4
+			name: "query with after cursor",
+			modifier: func(q *Query) {
+				q.SetLimit(2)
+				q.SetAfter(2) // After second record
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+				{Cursor: "0000000000000004", Message: "item4", Status: 500},
+			},
+		},
+		{
+			// Input: 1, 2, 3, 4, 5
+			// Output without limit: 1, 2, 3
+			// Output with limit: 2, 3
+			name: "query with before cursor",
+			modifier: func(q *Query) {
+				q.SetLimit(2)
+				q.SetBefore(4) // Before fourth record
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000002", Message: "item2", Status: 404},
+				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+			},
+		},
+		{
+			name: "eq filter",
+			modifier: func(q *Query) {
+				q.SetFilter("status", "eq", "403")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000003", Message: "item3", Status: 403},
+			},
+		},
+	}
 
-		require.NoError(t, storage.Query(buf, query), "Failed to execute query")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query := NewQuery(name)
+			tt.modifier(query)
+			buf := new(bytes.Buffer)
 
-		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
-		require.Len(t, lines, 5, "Expected 5 records in output") // 5 records
+			require.NoError(t, storage.Query(buf, query), "Failed to execute query")
+			lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
+			require.Len(t, lines, len(tt.want), "Expected %d records after query", len(tt.want))
 
-		var record logRecord
-		for i, line := range lines {
-			offset := i
-			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-
-			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
-			require.Equal(t, int64(offset+1), cursor, "Cursor value mismatch for record %d", i)
-			require.Equal(t, testData[offset]["message"], record.Message, "Message value mismatch for record %d", i)
-			require.Equal(t, testData[offset]["status"], record.Status, "Status value mismatch for record %d", i)
-		}
-	})
-
-	t.Run("query with limit", func(t *testing.T) {
-		// Input: 1, 2, 3, 4, 5
-		// Output with limit: 3, 4, 5
-		query := NewQuery(name)
-		query.SetLimit(3)
-		buf := new(bytes.Buffer)
-
-		require.NoError(t, storage.Query(buf, query), "Failed to execute query")
-
-		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
-		require.Len(t, lines, 3, "Expected 3 records in output")
-
-		var record logRecord
-		for i, line := range lines {
-			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
-			require.Equal(t, int64(i+3), cursor, "Cursor value mismatch for record %d", i)
-			require.Equal(t, testData[i+2]["message"], record.Message, "Message value mismatch for record %d", i)
-			require.Equal(t, testData[i+2]["status"], record.Status, "Status value mismatch for record %d", i)
-		}
-	})
-
-	t.Run("query with after cursor", func(t *testing.T) {
-		// Input: 1, 2, 3, 4, 5
-		// Output without limit: 3, 4, 5
-		// Output with limit: 3, 4
-		query := NewQuery(name)
-		query.SetLimit(2)
-		query.SetAfter(2) // After second record
-		buf := new(bytes.Buffer)
-
-		require.NoError(t, storage.Query(buf, query), "Failed to execute query with after cursor")
-
-		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
-		require.Len(t, lines, 2, "Expected 2 records after cursor")
-
-		var record logRecord
-		for i, line := range lines {
-			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
-			require.Equal(t, int64(i+3), cursor, "Cursor value mismatch for record %d", i)
-		}
-	})
-
-	t.Run("query with before cursor", func(t *testing.T) {
-		// Input: 1, 2, 3, 4, 5
-		// Output without limit: 1, 2, 3
-		// Output with limit: 2, 3
-		query := NewQuery(name)
-		query.SetLimit(2)
-		query.SetBefore(4) // Before fourth record
-		buf := new(bytes.Buffer)
-
-		require.NoError(t, storage.Query(buf, query), "Failed to execute query with before cursor")
-
-		lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
-		require.Len(t, lines, 2, "Expected 2 records after cursor")
-
-		var record logRecord
-		for i, line := range lines {
-			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
-			require.Equal(t, int64(i+2), cursor, "Cursor value mismatch for record %d", i)
-		}
-	})
+			var record logRecord
+			for i, line := range lines {
+				require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON")
+				require.Equal(t, tt.want[i], record, "Record mismatch")
+			}
+		})
+	}
 }
 
 func initFields(t *testing.T, fields []*field.Field) []*field.Field {
