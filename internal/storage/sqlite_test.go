@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -291,7 +292,7 @@ func TestSQLiteStorage_Query(t *testing.T) {
 	require.NoError(t, storage.createTable(name, fields), "Failed to create table")
 
 	type logRecord struct {
-		Cursor  int64  `json:"_cursor"`
+		Cursor  string `json:"_cursor"`
 		Message string `json:"message"`
 		Status  int    `json:"status"`
 	}
@@ -322,7 +323,9 @@ func TestSQLiteStorage_Query(t *testing.T) {
 		for i, line := range lines {
 			offset := i
 			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			require.Equal(t, int64(offset+1), record.Cursor, "Cursor value mismatch for record %d", i)
+
+			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
+			require.Equal(t, int64(offset+1), cursor, "Cursor value mismatch for record %d", i)
 			require.Equal(t, testData[offset]["message"], record.Message, "Message value mismatch for record %d", i)
 			require.Equal(t, testData[offset]["status"], record.Status, "Status value mismatch for record %d", i)
 		}
@@ -343,7 +346,8 @@ func TestSQLiteStorage_Query(t *testing.T) {
 		var record logRecord
 		for i, line := range lines {
 			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			require.Equal(t, int64(i+3), record.Cursor, "Cursor value mismatch for record %d", i)
+			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
+			require.Equal(t, int64(i+3), cursor, "Cursor value mismatch for record %d", i)
 			require.Equal(t, testData[i+2]["message"], record.Message, "Message value mismatch for record %d", i)
 			require.Equal(t, testData[i+2]["status"], record.Status, "Status value mismatch for record %d", i)
 		}
@@ -366,7 +370,8 @@ func TestSQLiteStorage_Query(t *testing.T) {
 		var record logRecord
 		for i, line := range lines {
 			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			require.Equal(t, int64(i+3), record.Cursor, "Cursor value mismatch for record %d", i)
+			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
+			require.Equal(t, int64(i+3), cursor, "Cursor value mismatch for record %d", i)
 		}
 	})
 
@@ -387,7 +392,8 @@ func TestSQLiteStorage_Query(t *testing.T) {
 		var record logRecord
 		for i, line := range lines {
 			require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON line %d", i)
-			require.Equal(t, int64(i+2), record.Cursor, "Cursor value mismatch for record %d", i)
+			cursor, _ := strconv.ParseInt(record.Cursor, 16, 64)
+			require.Equal(t, int64(i+2), cursor, "Cursor value mismatch for record %d", i)
 		}
 	})
 }

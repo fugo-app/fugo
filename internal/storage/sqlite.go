@@ -3,7 +3,6 @@ package storage
 import (
 	"bufio"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -165,52 +164,18 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 	out := bufio.NewWriter(w)
 	defer out.Flush()
 
-	for rows.Next() {
-		values := make([]any, len(columns))
-		pointers := make([]any, len(columns))
-		for i := range values {
-			pointers[i] = &values[i]
-		}
+	values := make([]any, len(columns))
+	pointers := make([]any, len(columns))
+	for i := range values {
+		pointers[i] = &values[i]
+	}
 
+	for rows.Next() {
 		if err := rows.Scan(pointers...); err != nil {
 			return err
 		}
 
-		out.WriteByte('{')
-
-		for i, col := range columns {
-			val := values[i]
-
-			if i > 0 {
-				out.WriteByte(',')
-			}
-
-			out.WriteByte('"')
-			out.WriteString(col)
-			out.WriteByte('"')
-			out.WriteByte(':')
-
-			switch v := val.(type) {
-			case []byte:
-				s, _ := json.Marshal(string(v))
-				out.Write(s)
-			case int64:
-				fmt.Fprintf(out, "%d", v)
-			case float64:
-				fmt.Fprintf(out, "%f", v)
-			case string:
-				s, _ := json.Marshal(v)
-				out.Write(s)
-			case nil:
-				out.WriteString("null")
-			default:
-				out.WriteString("null")
-			}
-		}
-
-		out.WriteByte('}')
-		out.WriteByte('\n')
-		out.Flush()
+		writeJsonLine(out, columns, values)
 	}
 
 	return rows.Err()
