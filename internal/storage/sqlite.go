@@ -138,15 +138,18 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
+	if q.after.Valid {
+		query += " ORDER BY _cursor ASC"
+	} else {
+		query += " ORDER BY _cursor DESC"
+	}
+
 	if q.limit.Valid {
-		if q.after.Valid {
-			query += " ORDER BY _cursor ASC LIMIT ?"
-		} else {
-			query += " ORDER BY _cursor DESC LIMIT ?"
-			query = "SELECT * FROM ( " + query + " ) temp ORDER BY _cursor ASC"
-		}
+		query += " LIMIT ?"
 		args = append(args, q.limit.Int64)
 	}
+
+	query = "SELECT * FROM ( " + query + " ) temp ORDER BY _cursor ASC"
 
 	rows, err := ss.db.Query(query, args...)
 	if err != nil {
