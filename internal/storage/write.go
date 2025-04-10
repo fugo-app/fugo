@@ -15,7 +15,7 @@ func writeJsonLine(out *bufio.Writer, columns []string, values []any) {
 		// _cursor is a special case
 		if i == 0 {
 			val := values[i]
-			fmt.Fprintf(out, `"_cursor":"%016x"`, val)
+			fmt.Fprintf(out, `"%s":"%016x"`, col, val)
 			continue
 		}
 
