@@ -151,6 +151,17 @@ Use GET requests to query logs. The API supports filtering and pagination.
 - `{field_name}__prefix`: Starts with (case-insensitive)
 - `{field_name}__suffix`: Ends with (case-insensitive)
 
+### Query Filters for time fields
+
+- `{field_name}__since`: Return records since the specified time
+- `{field_name}__until`: Return records until the specified time
+
+Supported formats:
+
+- "2006-01-02 15:04:05": date and time format
+- "2006-01-02": date only format
+- "5d": relative time (now minus 5 days), supported units are `s`, `m`, `h`, `d`
+
 ### Curl
 
 For example to get last 10 records from the nginx access log, with status not equal to 200:
