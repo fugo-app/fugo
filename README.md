@@ -1,6 +1,6 @@
 # Fugo
 
-A flexible and lightweight logs parsing and processing agent.
+A lightweight log collection and querying agent. Tail your logs, store in SQLite, and query via HTTP.
 
 ## Configuration
 
@@ -9,6 +9,8 @@ Fugo uses YAML configuration files. The main configuration file is located at `/
 ```yaml
 server:
   listen: 127.0.0.1:2221
+  cors:
+    origin: "*"
 
 storage:
   sqlite:
@@ -26,6 +28,7 @@ file_input:
 Options for HTTP API server:
 
 - `listen`: The address and port for the HTTP server (e.g., "127.0.0.1:2221" or ":2221").
+- `cors`: CORS configuration for the HTTP server. Default is disabled.
 
 Options for SQLite storage:
 

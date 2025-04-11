@@ -18,6 +18,9 @@ type ServerConfig struct {
 	// Example: "127.0.0.1:2221" or ":2221"
 	Listen string `yaml:"listen"`
 
+	// CORS
+	Cors *CorsConfig `yaml:"cors"`
+
 	server  *http.Server
 	storage storage.StorageDriver
 }
@@ -40,9 +43,11 @@ func (sc *ServerConfig) Open(storage storage.StorageDriver) error {
 
 	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
 
+	mw := sc.Cors.Middleware(mux)
+
 	sc.server = &http.Server{
 		Addr:    listen,
-		Handler: mux,
+		Handler: mw,
 	}
 
 	ln, err := net.Listen("tcp", listen)
