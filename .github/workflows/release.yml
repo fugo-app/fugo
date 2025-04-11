@@ -10,6 +10,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            cc_prefix: x86_64-linux-musl
+          - arch: arm64
+            cc_prefix: aarch64-linux-musl
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,35 +33,44 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y \
-            build-essential \
-            musl-tools \
-            pkg-config \
-            libssl-dev
+            zip \
+            curl
 
       - name: Setup version
         run: |
           echo "VERSION=${GITHUB_REF_NAME:1}" >> $GITHUB_ENV
+          echo "OUT_NAME=fugo-linux-${{ matrix.arch }}" >> $GITHUB_ENV
+
+      - name: Download musl toolchain
+        shell: bash
+        run: |
+          curl -L "https://musl.cc/${{ matrix.cc_prefix }}-cross.tgz" -o toolchain.tgz
+          mkdir -p toolchain
+          tar -xzf toolchain.tgz -C toolchain
+          rm -f toolchain.tgz
 
       - name: Build Fugo
         env:
-          GOARCH: amd64
+          GOARCH: ${{ matrix.arch }}
           GOOS: linux
           CGO_ENABLED: 1
-          CC: /usr/bin/musl-gcc
+          CC: ${{ github.workspace }}/toolchain/${{ matrix.cc_prefix }}-cross/bin/${{ matrix.cc_prefix }}-gcc
         run: |
           go build \
-            -o fugo-linux-amd64 \
+            -o ${{ env.OUT_NAME }} \
             -ldflags "-s -w -linkmode external -extldflags -static -X main.Version=${{ env.VERSION }}" \
             -trimpath \
             -v \
             ./cmd/fugo
 
       - name: Zip
-        run: zip -r fugo-linux-amd64.zip fugo-linux-amd64
+        shell: bash
+        run: |
+          zip -r ${{ env.OUT_NAME }}.zip ${{ env.OUT_NAME }}
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
-            fugo-linux-amd64.zip
+            ${{ env.OUT_NAME }}.zip
