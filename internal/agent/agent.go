@@ -17,6 +17,9 @@ type Agent struct {
 	// File-based input.
 	File *file.FileWatcher `yaml:"file,omitempty"`
 
+	// Retention configuration
+	Retention storage.RetentionConfig `yaml:"retention,omitempty"`
+
 	storage storage.StorageDriver
 }
 
@@ -32,17 +35,31 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 		return fmt.Errorf("fields are required")
 	}
 
+	var timefield string
+
 	for i := range a.Fields {
 		field := a.Fields[i]
 		if err := field.Init(); err != nil {
 			return fmt.Errorf("field %s init: %w", field.Name, err)
 		}
+
+		if timefield == "" && field.Type == "time" {
+			timefield = field.Name
+		}
+	}
+
+	if timefield == "" {
+		return fmt.Errorf("time field is required")
 	}
 
 	if a.File != nil {
 		if err := a.File.Init(a); err != nil {
 			return fmt.Errorf("file agent init: %w", err)
 		}
+	}
+
+	if err := a.Retention.Init(name, timefield, storage); err != nil {
+		return fmt.Errorf("retention init: %w", err)
 	}
 
 	return nil
@@ -52,12 +69,16 @@ func (a *Agent) Start() {
 	if a.File != nil {
 		a.File.Start()
 	}
+
+	a.Retention.Start()
 }
 
 func (a *Agent) Stop() {
 	if a.File != nil {
 		a.File.Stop()
 	}
+
+	a.Retention.Stop()
 }
 
 // Process receives raw data from input and converts to the logs record.

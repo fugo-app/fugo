@@ -58,6 +58,9 @@ file:
   path: /var/log/nginx/access.log
   format: plain
   regex: '^(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+)'
+retention:
+  period: 7d
+  interval: 1h
 ```
 
 Example, configuration for nginx error log `/etc/fugo/agents/nginx-error.yaml`:
@@ -73,11 +76,15 @@ file:
   path: /var/log/nginx/error.log
   format: plain
   regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
+retention:
+  period: 3d
+  interval: 1h
 ```
 
 - `name`: The name of the agent
 - `fields`: A list of fields to store in the log records
 - `file`: Configuration for file-based input
+- `retention`: Configuration for log retention
 
 ## Fields Configuration
 
@@ -101,7 +108,7 @@ Formats:
 - `unix`: Unix timestamp in seconds, optionally with fractional part for milliseconds: `1617715200.123`
 - Use any valid Go time format string for custom logs, e.g. `02 Jan 2006 15:04:05`
 
-## File-based Input
+## File-based Input Configuration
 
 File-based input has the following configuration:
 
@@ -118,6 +125,13 @@ path: '/var/log/nginx/access_(?P<host>.*)\.log'
 ```
 
 A named capture group should be in the file name only and can be used in the fields.
+
+## Retention Configuration
+
+Retention configuration has the following options:
+
+- `period`: The retention period for the logs. It can be specified in minutes, hours, days (e.g., `3h`, `7d`, `3d12h`). Default is `3d`.
+- `interval`: The interval for log retention. It can be specified in minutes, hours, days (e.g., `10m`, `1h`). Default is `1h`.
 
 ## Querying Logs
 
