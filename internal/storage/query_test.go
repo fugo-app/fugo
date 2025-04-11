@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -405,7 +406,38 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 				{"_cursor": "0000000000000003", "time": int64(1735823700000)},
 			},
 		},
+		{
+			// time.Now() returns 2025-01-02 13:00:00 UTC
+			name: "since filter relative",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "since", "1h")
+			},
+			want: []map[string]any{
+				{"_cursor": "0000000000000003", "time": int64(1735823700000)},
+				{"_cursor": "0000000000000004", "time": int64(1735829100000)},
+				{"_cursor": "0000000000000005", "time": int64(1735833600000)},
+			},
+		},
+		{
+			// time.Now() returns 2025-01-02 13:00:00 UTC
+			name: "until filter relative",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "until", "1h")
+			},
+			want: []map[string]any{
+				{"_cursor": "0000000000000001", "time": int64(1735812000000)},
+				{"_cursor": "0000000000000002", "time": int64(1735817400000)},
+			},
+		},
 	}
+
+	defaultTimeNow := stdTimeNow
+	stdTimeNow = func() time.Time {
+		return time.Date(2025, 1, 2, 13, 0, 0, 0, time.UTC)
+	}
+	defer func() {
+		stdTimeNow = defaultTimeNow
+	}()
 
 	testQuery_CheckResult(t, name, storage, tests)
 }
