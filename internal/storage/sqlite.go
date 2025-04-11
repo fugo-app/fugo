@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 
@@ -110,6 +111,18 @@ func (ss *SQLiteStorage) Migrate(name string, fields []*field.Field) error {
 		if err := ss.migrateTable(name, fields); err != nil {
 			return fmt.Errorf("migrate table: %w", err)
 		}
+	}
+
+	return nil
+}
+
+func (ss *SQLiteStorage) Cleanup(name string, field string, retention time.Duration) error {
+	query := fmt.Sprintf("DELETE FROM `%s` WHERE `%s` < ?", name, field)
+	value := time.Now().Add(-retention).Unix()
+
+	_, err := ss.db.Exec(query, value)
+	if err != nil {
+		return fmt.Errorf("cleanup table: %w", err)
 	}
 
 	return nil

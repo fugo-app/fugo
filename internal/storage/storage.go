@@ -3,6 +3,7 @@ package storage
 import (
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/fugo-app/fugo/internal/field"
 )
@@ -11,6 +12,7 @@ type StorageDriver interface {
 	Open() error
 	Close() error
 	Migrate(string, []*field.Field) error
+	Cleanup(string, string, time.Duration) error
 	Write(string, map[string]any)
 	Query(io.Writer, *Query) error
 }
