@@ -136,6 +136,8 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 		reverse = true
 		conditions = append(conditions, "_cursor < ?")
 		args = append(args, q.before.Int64)
+	} else {
+		reverse = true
 	}
 
 	for _, filter := range q.filters {
@@ -179,6 +181,7 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 				// Get all records since defined date but before cursor.
 				return nil
 			}
+			reverse = false
 			conditions = append(conditions, fmt.Sprintf("`%s` > ?", filter.name))
 			args = append(args, filter.ival)
 		case Until:

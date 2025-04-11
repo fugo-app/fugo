@@ -1,9 +1,7 @@
 package storage
 
 import (
-	"bytes"
 	"database/sql"
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -18,7 +16,7 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 	defer storage.Close()
 
 	name := "test_agent"
-	fields := initFields(t, []*field.Field{
+	fields := testSqlite_InitFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -33,7 +31,7 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 
 	t.Run("create table", func(t *testing.T) {
 		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 
 	t.Run("check table exists", func(t *testing.T) {
@@ -96,7 +94,7 @@ func TestSQLiteStorage_migrateTable_AddColumn(t *testing.T) {
 	name := "test_migration"
 
 	t.Run("create table", func(t *testing.T) {
-		fields := initFields(t, []*field.Field{
+		fields := testSqlite_InitFields(t, []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -108,12 +106,12 @@ func TestSQLiteStorage_migrateTable_AddColumn(t *testing.T) {
 		})
 
 		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 
 	// Create updated agent with additional fields
 	t.Run("migrate table", func(t *testing.T) {
-		fields := initFields(t, []*field.Field{
+		fields := testSqlite_InitFields(t, []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -127,7 +125,7 @@ func TestSQLiteStorage_migrateTable_AddColumn(t *testing.T) {
 		})
 
 		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 }
 
@@ -140,7 +138,7 @@ func TestSQLiteStorage_migrateTable_RemoveColumn(t *testing.T) {
 	name := "test_removal"
 
 	t.Run("create table", func(t *testing.T) {
-		fields := initFields(t, []*field.Field{
+		fields := testSqlite_InitFields(t, []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -154,12 +152,12 @@ func TestSQLiteStorage_migrateTable_RemoveColumn(t *testing.T) {
 		})
 
 		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 
 	// Create updated agent with fewer fields
 	t.Run("migrate table", func(t *testing.T) {
-		fields := initFields(t, []*field.Field{
+		fields := testSqlite_InitFields(t, []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -172,7 +170,7 @@ func TestSQLiteStorage_migrateTable_RemoveColumn(t *testing.T) {
 		})
 
 		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 }
 
@@ -185,7 +183,7 @@ func TestSQLiteStorage_MigrateChangeColumnType(t *testing.T) {
 	name := "test_type_change"
 
 	t.Run("create table", func(t *testing.T) {
-		fields := initFields(t, []*field.Field{
+		fields := testSqlite_InitFields(t, []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -198,12 +196,12 @@ func TestSQLiteStorage_MigrateChangeColumnType(t *testing.T) {
 		})
 
 		require.NoError(t, storage.createTable(name, fields), "Failed to create table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 
 	// Create updated agent with changed column types
 	t.Run("migrate table", func(t *testing.T) {
-		fields := initFields(t, []*field.Field{
+		fields := testSqlite_InitFields(t, []*field.Field{
 			{
 				Name: "timestamp",
 				Timestamp: &field.TimestampFormat{
@@ -216,7 +214,7 @@ func TestSQLiteStorage_MigrateChangeColumnType(t *testing.T) {
 		})
 
 		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
-		verifySqliteDB(t, storage, name, fields)
+		testSqlite_VerifyDB(t, storage, name, fields)
 	})
 }
 
@@ -226,7 +224,7 @@ func TestSQLiteStorage_insertData(t *testing.T) {
 	defer storage.Close()
 
 	name := "test_insert"
-	fields := initFields(t, []*field.Field{
+	fields := testSqlite_InitFields(t, []*field.Field{
 		{
 			Name: "timestamp",
 			Timestamp: &field.TimestampFormat{
@@ -281,377 +279,20 @@ func TestSQLiteStorage_Query(t *testing.T) {
 	require.NoError(t, storage.Open(), "Failed to open SQLite database")
 	defer storage.Close()
 
-	name := "test_query"
-	fields := initFields(t, []*field.Field{
-		{Name: "message", Type: "string"},
-		{Name: "status", Type: "int"},
+	t.Run("number", func(t *testing.T) {
+		testQuery_Number(t, storage)
 	})
 
-	// Create the table
-	require.NoError(t, storage.createTable(name, fields), "Failed to create table")
-
-	type logRecord struct {
-		Cursor  string `json:"_cursor"`
-		Message string `json:"message"`
-		Status  int    `json:"status"`
-	}
-
-	// Insert test data
-	testData := []map[string]any{
-		{"message": "apple pie", "status": 200},
-		{"message": "pineapple juice", "status": 404},
-		{"message": "grapefruit", "status": 403},
-		{"message": "apple", "status": 500},
-		{"message": "green apple", "status": 400},
-	}
-
-	for _, data := range testData {
-		require.NoError(t, storage.insertData(name, data), "Failed to insert test data")
-	}
-
-	tests := []struct {
-		name     string
-		modifier func(q *Query)
-		want     []logRecord
-	}{
-		{
-			name:     "query all records",
-			modifier: func(q *Query) {},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
-				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-		{
-			name: "query with limit",
-			modifier: func(q *Query) {
-				q.SetLimit(3)
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-		{
-			// Input: 1, 2, 3, 4, 5
-			// Output without limit: 3, 4, 5
-			// Output with limit: 3, 4
-			name: "query with after cursor",
-			modifier: func(q *Query) {
-				q.SetLimit(2)
-				q.SetAfter(2) // After second record
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-			},
-		},
-		{
-			// Input: 1, 2, 3, 4, 5
-			// Output without limit: 1, 2, 3
-			// Output with limit: 2, 3
-			name: "query with before cursor",
-			modifier: func(q *Query) {
-				q.SetLimit(2)
-				q.SetBefore(4) // Before fourth record
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-			},
-		},
-		{
-			name: "eq filter",
-			modifier: func(q *Query) {
-				q.SetFilter("status", "eq", "403")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-			},
-		},
-		{
-			name: "ne filter",
-			modifier: func(q *Query) {
-				q.SetFilter("status", "ne", "403")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
-				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-		{
-			name: "lt filter",
-			modifier: func(q *Query) {
-				q.SetFilter("status", "lt", "403")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-		{
-			name: "lte filter",
-			modifier: func(q *Query) {
-				q.SetFilter("status", "lte", "403")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-		{
-			name: "gt filter",
-			modifier: func(q *Query) {
-				q.SetFilter("status", "gt", "403")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-			},
-		},
-		{
-			name: "gte filter",
-			modifier: func(q *Query) {
-				q.SetFilter("status", "gte", "403")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
-				{Cursor: "0000000000000003", Message: "grapefruit", Status: 403},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-			},
-		},
-		{
-			name: "exact filter",
-			modifier: func(q *Query) {
-				q.SetFilter("message", "exact", "apple")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-			},
-		},
-		{
-			name: "like filter",
-			modifier: func(q *Query) {
-				q.SetFilter("message", "like", "apple")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
-				{Cursor: "0000000000000002", Message: "pineapple juice", Status: 404},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-		{
-			name: "prefix filter",
-			modifier: func(q *Query) {
-				q.SetFilter("message", "prefix", "apple")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Message: "apple pie", Status: 200},
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-			},
-		},
-		{
-			name: "suffix filter",
-			modifier: func(q *Query) {
-				q.SetFilter("message", "suffix", "apple")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000004", Message: "apple", Status: 500},
-				{Cursor: "0000000000000005", Message: "green apple", Status: 400},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			query := NewQuery(name)
-			tt.modifier(query)
-			buf := new(bytes.Buffer)
-
-			require.NoError(t, storage.Query(buf, query), "Failed to execute query")
-			payload := bytes.TrimSpace(buf.Bytes())
-			lines := [][]byte{}
-			if len(payload) > 0 {
-				lines = bytes.Split(payload, []byte{'\n'})
-			}
-			require.Len(t, lines, len(tt.want), "Expected %d records after query", len(tt.want))
-
-			var record logRecord
-			for i, line := range lines {
-				require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON")
-				require.Equal(t, tt.want[i], record, "Record mismatch")
-			}
-		})
-	}
-}
-
-func TestSQLiteStorage_Query_time(t *testing.T) {
-	storage := &SQLiteStorage{Path: ":memory:"}
-	require.NoError(t, storage.Open(), "Failed to open SQLite database")
-	defer storage.Close()
-
-	name := "test_query"
-	fields := initFields(t, []*field.Field{
-		{
-			Name: "time",
-			Timestamp: &field.TimestampFormat{
-				Format: "stamp",
-			},
-		},
+	t.Run("string", func(t *testing.T) {
+		testQuery_String(t, storage)
 	})
 
-	// Create the table
-	require.NoError(t, storage.createTable(name, fields), "Failed to create table")
-
-	type logRecord struct {
-		Cursor string `json:"_cursor"`
-		Time   int64  `json:"time"`
-	}
-
-	// Insert test data
-	testData := []map[string]any{
-		{"time": 1735812000000}, // 2025-01-02 10:00:00
-		{"time": 1735817400000}, // 2025-01-02 11:30:00
-		{"time": 1735823700000}, // 2025-01-02 13:15:00
-		{"time": 1735829100000}, // 2025-01-02 14:45:00
-		{"time": 1735833600000}, // 2025-01-02 16:00:00
-	}
-
-	for _, data := range testData {
-		require.NoError(t, storage.insertData(name, data), "Failed to insert test data")
-	}
-
-	tests := []struct {
-		name     string
-		modifier func(q *Query)
-		want     []logRecord
-	}{
-		{
-			name:     "query all records",
-			modifier: func(q *Query) {},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Time: 1735812000000},
-				{Cursor: "0000000000000002", Time: 1735817400000},
-				{Cursor: "0000000000000003", Time: 1735823700000},
-				{Cursor: "0000000000000004", Time: 1735829100000},
-				{Cursor: "0000000000000005", Time: 1735833600000},
-			},
-		},
-		{
-			name: "since filter",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000003", Time: 1735823700000},
-				{Cursor: "0000000000000004", Time: 1735829100000},
-				{Cursor: "0000000000000005", Time: 1735833600000},
-			},
-		},
-		{
-			name: "until filter",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 13:00:00")
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000001", Time: 1735812000000},
-				{Cursor: "0000000000000002", Time: 1735817400000},
-			},
-		},
-		{
-			name: "since filter with limit",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
-				q.SetLimit(2)
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000003", Time: 1735823700000},
-				{Cursor: "0000000000000004", Time: 1735829100000},
-			},
-		},
-		{
-			name: "until filter with limit",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 14:00:00")
-				q.SetLimit(2)
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000002", Time: 1735817400000},
-				{Cursor: "0000000000000003", Time: 1735823700000},
-			},
-		},
-		{
-			name: "since filter with after cursor",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
-				q.SetAfter(2)
-			},
-			want: []logRecord{}, // No records should be returned
-		},
-		{
-			name: "until filter with before cursor",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 14:00:00")
-				q.SetBefore(2)
-			},
-			want: []logRecord{}, // No records should be returned
-		},
-		{
-			name: "since filter with before cursor",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
-				q.SetBefore(5)
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000003", Time: 1735823700000},
-				{Cursor: "0000000000000004", Time: 1735829100000},
-			},
-		},
-		{
-			name: "until filter with after cursor",
-			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 14:00:00")
-				q.SetAfter(1)
-			},
-			want: []logRecord{
-				{Cursor: "0000000000000002", Time: 1735817400000},
-				{Cursor: "0000000000000003", Time: 1735823700000},
-			},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			query := NewQuery(name)
-			tt.modifier(query)
-			buf := new(bytes.Buffer)
-
-			require.NoError(t, storage.Query(buf, query), "Failed to execute query")
-			payload := bytes.TrimSpace(buf.Bytes())
-			lines := [][]byte{}
-			if len(payload) > 0 {
-				lines = bytes.Split(payload, []byte{'\n'})
-			}
-			require.Len(t, lines, len(tt.want), "Expected %d records after query", len(tt.want))
-
-			var record logRecord
-			for i, line := range lines {
-				require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON")
-				require.Equal(t, tt.want[i], record, "Record mismatch")
-			}
-		})
-	}
+	t.Run("time", func(t *testing.T) {
+		testQuery_Time(t, storage)
+	})
 }
 
-func initFields(t *testing.T, fields []*field.Field) []*field.Field {
+func testSqlite_InitFields(t *testing.T, fields []*field.Field) []*field.Field {
 	for _, f := range fields {
 		require.NoError(t, f.Init(), "Failed to initialize field: %s", f.Name)
 	}
@@ -660,7 +301,7 @@ func initFields(t *testing.T, fields []*field.Field) []*field.Field {
 }
 
 // verifyTableStructure checks that the table was created with the correct columns
-func verifySqliteDB(t *testing.T, storage *SQLiteStorage, name string, fields []*field.Field) {
+func testSqlite_VerifyDB(t *testing.T, storage *SQLiteStorage, name string, fields []*field.Field) {
 	tableExists, err := storage.checkTable(name)
 	require.NoError(t, err, "Failed to check if table exists")
 	require.True(t, tableExists, "Table does not exist")
