@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestParseDuration(t *testing.T) {
+func Test_Parse(t *testing.T) {
 	tests := []struct {
 		input   string
 		want    time.Duration
@@ -60,6 +60,30 @@ func TestParseDuration(t *testing.T) {
 				assert.NoError(t, err)
 				assert.Equal(t, test.want, result)
 			}
+		})
+	}
+}
+
+func Test_Match(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"1s", true},
+		{"2m", true},
+		{"3h", true},
+		{"1d", true},
+		{"1h30m", true},
+		{"2d3h", true},
+		{"1d 14h 30m", false},
+		{"invalid", false},
+		{"10x", false},
+	}
+
+	for _, test := range tests {
+		t.Run(test.input, func(t *testing.T) {
+			result := Match(test.input)
+			assert.Equal(t, test.want, result)
 		})
 	}
 }
