@@ -51,6 +51,10 @@ func (sc *StorageConfig) Migrate(table string, fields []*field.Field) error {
 	return sc.inner.Migrate(table, fields)
 }
 
+func (sc *StorageConfig) Cleanup(table, field string, duration time.Duration) error {
+	return sc.inner.Cleanup(table, field, duration)
+}
+
 func (sc *StorageConfig) Write(table string, data map[string]any) {
 	sc.inner.Write(table, data)
 }
