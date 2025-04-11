@@ -4,6 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"time"
+
+	"github.com/fugo-app/fugo/pkg/duration"
 )
 
 type Query struct {
@@ -26,7 +29,7 @@ type QueryOperator struct {
 type QueryOperatorType int
 
 const (
-	// Comparison Operators
+	// Integer Operators
 	Eq QueryOperatorType = iota
 	Ne
 	Lt
@@ -39,6 +42,10 @@ const (
 	Like
 	Prefix
 	Suffix
+
+	// Time Operators
+	Since
+	Until
 )
 
 var opmap = map[string]QueryOperatorType{
@@ -52,6 +59,8 @@ var opmap = map[string]QueryOperatorType{
 	"like":   Like,
 	"prefix": Prefix,
 	"suffix": Suffix,
+	"since":  Since,
+	"until":  Until,
 }
 
 func NewQuery(name string) *Query {
@@ -86,14 +95,53 @@ func (q *Query) SetFilter(name string, op string, val string) error {
 	}
 
 	if opType >= Eq && opType <= Gte {
+		// Integer operators
 		ival, err := strconv.ParseInt(val, 0, 64)
 		if err != nil {
 			return fmt.Errorf("invalid int value: %s", val)
 		}
 		q.filters = append(q.filters, &QueryOperator{name: name, op: opType, ival: ival})
-	} else {
+	} else if opType >= Exact && opType <= Suffix {
+		// String operators
 		q.filters = append(q.filters, &QueryOperator{name: name, op: opType, sval: val})
+	} else if opType >= Since && opType <= Until {
+		// Time operators
+		timestamp, err := parseTimestamp(val)
+		if err != nil {
+			return fmt.Errorf("invalid timestamp value: %s, error: %w", val, err)
+		}
+		q.filters = append(q.filters, &QueryOperator{name: name, op: opType, ival: timestamp})
 	}
 
 	return nil
+}
+
+// parseTimestamp converts timestamp string to unix milliseconds.
+// Supported formats:
+// - "2006-01-02 15:04:05" - date and time format
+// - "2006-01-02" - date only format
+// - "5d" - relative time (now minus 5 days)
+// - "2h" - relative time (now minus 2 hours)
+func parseTimestamp(val string) (int64, error) {
+	if duration.Match(val) {
+		d, err := duration.Parse(val)
+		if err != nil {
+			return 0, err
+		}
+		return time.Now().Add(-d).UnixMilli(), nil
+	}
+
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		"2006-01-02",
+	}
+
+	for _, layout := range layouts {
+		t, err := time.Parse(layout, val)
+		if err == nil {
+			return t.UnixMilli(), nil
+		}
+	}
+
+	return 0, fmt.Errorf("invalid format")
 }

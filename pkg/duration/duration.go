@@ -7,7 +7,8 @@ import (
 	"time"
 )
 
-var re = regexp.MustCompile(`(?i)(\d+)([smhd])`)
+var reMatch = regexp.MustCompile(`(?i)^(\d+[smhd])+$`)
+var reParts = regexp.MustCompile(`(?i)(\d+)([smhd])`)
 
 var unitMap = map[string]time.Duration{
 	"s": time.Second,
@@ -16,9 +17,12 @@ var unitMap = map[string]time.Duration{
 	"d": time.Hour * 24,
 }
 
-func ParseDuration(input string) (time.Duration, error) {
-	re.FindAllStringSubmatch(input, -1)
-	matches := re.FindAllStringSubmatch(input, -1)
+func Match(input string) bool {
+	return reMatch.MatchString(input)
+}
+
+func Parse(input string) (time.Duration, error) {
+	matches := reParts.FindAllStringSubmatch(input, -1)
 	if len(matches) == 0 {
 		return 0, fmt.Errorf("invalid duration: %s", input)
 	}
