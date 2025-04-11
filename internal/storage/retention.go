@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/fugo-app/fugo/pkg/duration"
 )
 
 type RetentionConfig struct {
@@ -32,7 +34,7 @@ func (rc *RetentionConfig) Init(name string, field string, storage StorageDriver
 
 	rc.period = time.Hour * 24 * 3 // Default to 3 days
 	if rc.Period != "" {
-		d, err := time.ParseDuration(rc.Period)
+		d, err := duration.Parse(rc.Period)
 		if err != nil {
 			return fmt.Errorf("invalid period value: %w", err)
 		}
@@ -41,7 +43,7 @@ func (rc *RetentionConfig) Init(name string, field string, storage StorageDriver
 
 	rc.interval = time.Hour // Default to 1 hour
 	if rc.Interval != "" {
-		d, err := time.ParseDuration(rc.Interval)
+		d, err := duration.Parse(rc.Interval)
 		if err != nil {
 			return fmt.Errorf("invalid interval value: %w", err)
 		}
