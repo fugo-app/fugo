@@ -477,7 +477,169 @@ func TestSQLiteStorage_Query(t *testing.T) {
 			buf := new(bytes.Buffer)
 
 			require.NoError(t, storage.Query(buf, query), "Failed to execute query")
-			lines := bytes.Split(bytes.TrimSpace(buf.Bytes()), []byte{'\n'})
+			payload := bytes.TrimSpace(buf.Bytes())
+			lines := [][]byte{}
+			if len(payload) > 0 {
+				lines = bytes.Split(payload, []byte{'\n'})
+			}
+			require.Len(t, lines, len(tt.want), "Expected %d records after query", len(tt.want))
+
+			var record logRecord
+			for i, line := range lines {
+				require.NoError(t, json.Unmarshal(line, &record), "Failed to unmarshal JSON")
+				require.Equal(t, tt.want[i], record, "Record mismatch")
+			}
+		})
+	}
+}
+
+func TestSQLiteStorage_Query_time(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
+
+	name := "test_query"
+	fields := initFields(t, []*field.Field{
+		{
+			Name: "time",
+			Timestamp: &field.TimestampFormat{
+				Format: "stamp",
+			},
+		},
+	})
+
+	// Create the table
+	require.NoError(t, storage.createTable(name, fields), "Failed to create table")
+
+	type logRecord struct {
+		Cursor string `json:"_cursor"`
+		Time   int64  `json:"time"`
+	}
+
+	// Insert test data
+	testData := []map[string]any{
+		{"time": 1735812000000}, // 2025-01-02 10:00:00
+		{"time": 1735817400000}, // 2025-01-02 11:30:00
+		{"time": 1735823700000}, // 2025-01-02 13:15:00
+		{"time": 1735829100000}, // 2025-01-02 14:45:00
+		{"time": 1735833600000}, // 2025-01-02 16:00:00
+	}
+
+	for _, data := range testData {
+		require.NoError(t, storage.insertData(name, data), "Failed to insert test data")
+	}
+
+	tests := []struct {
+		name     string
+		modifier func(q *Query)
+		want     []logRecord
+	}{
+		{
+			name:     "query all records",
+			modifier: func(q *Query) {},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Time: 1735812000000},
+				{Cursor: "0000000000000002", Time: 1735817400000},
+				{Cursor: "0000000000000003", Time: 1735823700000},
+				{Cursor: "0000000000000004", Time: 1735829100000},
+				{Cursor: "0000000000000005", Time: 1735833600000},
+			},
+		},
+		{
+			name: "since filter",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000003", Time: 1735823700000},
+				{Cursor: "0000000000000004", Time: 1735829100000},
+				{Cursor: "0000000000000005", Time: 1735833600000},
+			},
+		},
+		{
+			name: "until filter",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "until", "2025-01-02 13:00:00")
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000001", Time: 1735812000000},
+				{Cursor: "0000000000000002", Time: 1735817400000},
+			},
+		},
+		{
+			name: "since filter with limit",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetLimit(2)
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000003", Time: 1735823700000},
+				{Cursor: "0000000000000004", Time: 1735829100000},
+			},
+		},
+		{
+			name: "until filter with limit",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "until", "2025-01-02 14:00:00")
+				q.SetLimit(2)
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000002", Time: 1735817400000},
+				{Cursor: "0000000000000003", Time: 1735823700000},
+			},
+		},
+		{
+			name: "since filter with after cursor",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetAfter(2)
+			},
+			want: []logRecord{}, // No records should be returned
+		},
+		{
+			name: "until filter with before cursor",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "until", "2025-01-02 14:00:00")
+				q.SetBefore(2)
+			},
+			want: []logRecord{}, // No records should be returned
+		},
+		{
+			name: "since filter with before cursor",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetBefore(5)
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000003", Time: 1735823700000},
+				{Cursor: "0000000000000004", Time: 1735829100000},
+			},
+		},
+		{
+			name: "until filter with after cursor",
+			modifier: func(q *Query) {
+				q.SetFilter("time", "until", "2025-01-02 14:00:00")
+				q.SetAfter(1)
+			},
+			want: []logRecord{
+				{Cursor: "0000000000000002", Time: 1735817400000},
+				{Cursor: "0000000000000003", Time: 1735823700000},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query := NewQuery(name)
+			tt.modifier(query)
+			buf := new(bytes.Buffer)
+
+			require.NoError(t, storage.Query(buf, query), "Failed to execute query")
+			payload := bytes.TrimSpace(buf.Bytes())
+			lines := [][]byte{}
+			if len(payload) > 0 {
+				lines = bytes.Split(payload, []byte{'\n'})
+			}
 			require.Len(t, lines, len(tt.want), "Expected %d records after query", len(tt.want))
 
 			var record logRecord

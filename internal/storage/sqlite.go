@@ -122,13 +122,18 @@ func (ss *SQLiteStorage) Write(name string, data map[string]any) {
 func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 	query := fmt.Sprintf("SELECT * FROM `%s`", q.name)
 
-	var args []any
-	var conditions []string
+	var (
+		args       []any
+		conditions []string
+		reverse    bool
+	)
 
 	if q.after.Valid {
+		reverse = false
 		conditions = append(conditions, "_cursor > ?")
 		args = append(args, q.after.Int64)
 	} else if q.before.Valid {
+		reverse = true
 		conditions = append(conditions, "_cursor < ?")
 		args = append(args, q.before.Int64)
 	}
@@ -168,6 +173,23 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 			conditions = append(conditions, fmt.Sprintf("`%s` LIKE ?", filter.name))
 			value := "%" + filter.sval
 			args = append(args, value)
+		case Since:
+			if q.after.Valid {
+				// Could be used only with before-cursor. For example:
+				// Get all records since defined date but before cursor.
+				return nil
+			}
+			conditions = append(conditions, fmt.Sprintf("`%s` > ?", filter.name))
+			args = append(args, filter.ival)
+		case Until:
+			if q.before.Valid {
+				// Could be used only with after-cursor. For example:
+				// Get all records after defined cursor but until date.
+				return nil
+			}
+			reverse = true
+			conditions = append(conditions, fmt.Sprintf("`%s` < ?", filter.name))
+			args = append(args, filter.ival)
 		}
 	}
 
@@ -175,10 +197,10 @@ func (ss *SQLiteStorage) Query(w io.Writer, q *Query) error {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	if q.after.Valid {
-		query += " ORDER BY _cursor ASC"
-	} else {
+	if reverse {
 		query += " ORDER BY _cursor DESC"
+	} else {
+		query += " ORDER BY _cursor ASC"
 	}
 
 	if q.limit.Valid {

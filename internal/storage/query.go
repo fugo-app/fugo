@@ -63,6 +63,8 @@ var opmap = map[string]QueryOperatorType{
 	"until":  Until,
 }
 
+var stdTimeNow = time.Now
+
 func NewQuery(name string) *Query {
 	return &Query{
 		name: name,
@@ -128,7 +130,7 @@ func parseTimestamp(val string) (int64, error) {
 		if err != nil {
 			return 0, err
 		}
-		return time.Now().Add(-d).UnixMilli(), nil
+		return stdTimeNow().Add(-d).UnixMilli(), nil
 	}
 
 	layouts := []string{
