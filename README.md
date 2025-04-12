@@ -83,7 +83,7 @@ file:
   format: json
   rotate:
     method: truncate
-    max_size: 1mb
+    size: 1mb
 retention:
   period: 7d
   interval: 1h
@@ -106,7 +106,7 @@ file:
   regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
   rotate:
     method: truncate
-    max_size: 1mb
+    size: 1mb
 retention:
   period: 3d
   interval: 1h
@@ -166,7 +166,7 @@ Cleanup the log file when it reaches a certain size. The `rotate` configuration 
 - `method`: The method to use for log rotation. Supported methods are `truncate` and `rename`.
   - `truncate`: Truncate the log file to zero size.
   - `rename`: Rename the log file and create a new one. The old file will be removed.
-- `max_size`: The maximum size of the log file before rotation. It can be specified in bytes, kilobytes (kb) or megabytes (mb).
+- `size`: The maximum size of the log file before rotation. It can be specified in bytes, kilobytes (kb) or megabytes (mb).
 - `run`: The command to run after rotation. It can be a shell command or a script. This option required if `method` is `rename`.
 
 ## Retention Configuration

@@ -15,12 +15,12 @@ import (
 
 type RotationConfig struct {
 	// Rotation method. Options: "truncate", "rename"
-	Method  string `yaml:"method,omitempty"`
-	MaxSize string `yaml:"max_size,omitempty"`
-	Run     string `yaml:"run,omitempty"`
+	Method string `yaml:"method,omitempty"`
+	Size   string `yaml:"size,omitempty"`
+	Run    string `yaml:"run,omitempty"`
 
 	rotator fileRotator
-	maxSize int64
+	size    int64
 }
 
 type fileRotator interface {
@@ -31,9 +31,9 @@ type fileRotator interface {
 var reSize = regexp.MustCompile(`(?i)^(\d+(?:\.\d+)?)([km]b)?$`)
 
 func (rc *RotationConfig) Init() error {
-	matches := reSize.FindStringSubmatch(rc.MaxSize)
+	matches := reSize.FindStringSubmatch(rc.Size)
 	if len(matches) == 0 {
-		return fmt.Errorf("invalid max_size format: %s", rc.MaxSize)
+		return fmt.Errorf("invalid size format: %s", rc.Size)
 	}
 
 	val, unit := matches[1], strings.ToLower(matches[2])
@@ -50,7 +50,7 @@ func (rc *RotationConfig) Init() error {
 		multiplier = 1024 * 1024
 	}
 
-	rc.maxSize = int64(num * multiplier)
+	rc.size = int64(num * multiplier)
 
 	method := strings.ToLower(rc.Method)
 	switch method {
@@ -71,7 +71,7 @@ func (rc *RotationConfig) Init() error {
 }
 
 func (rc *RotationConfig) CheckSize(size int64) bool {
-	return (rc != nil) && (rc.maxSize > 0) && (size >= rc.maxSize)
+	return (rc != nil) && (rc.size > 0) && (size >= rc.size)
 }
 
 func (rc *RotationConfig) Rotate(path string) error {

@@ -15,92 +15,102 @@ func TestRotationConfig_Init(t *testing.T) {
 		name      string
 		config    RotationConfig
 		expectErr bool
-		maxSize   int64
+		size      int64
 	}{
 		{
 			name: "valid bytes value",
 			config: RotationConfig{
-				Method:  "truncate",
-				MaxSize: "100",
+				Method: "truncate",
+				Size:   "100",
 			},
 			expectErr: false,
-			maxSize:   100,
+			size:      100,
 		},
 		{
 			name: "valid KB value",
 			config: RotationConfig{
-				Method:  "truncate",
-				MaxSize: "1.5KB",
+				Method: "truncate",
+				Size:   "1.5KB",
 			},
 			expectErr: false,
-			maxSize:   1536, // 1.5 * 1024
+			size:      1536, // 1.5 * 1024
 		},
 		{
 			name: "valid MB value",
 			config: RotationConfig{
-				Method:  "truncate",
-				MaxSize: "2MB",
+				Method: "truncate",
+				Size:   "2MB",
 			},
 			expectErr: false,
-			maxSize:   2097152, // 2 * 1024 * 1024
+			size:      2097152, // 2 * 1024 * 1024
 		},
 		{
 			name: "case insensitive unit",
 			config: RotationConfig{
-				Method:  "truncate",
-				MaxSize: "1.5Kb",
+				Method: "truncate",
+				Size:   "1.5Kb",
 			},
 			expectErr: false,
-			maxSize:   1536, // 1.5 * 1024
+			size:      1536, // 1.5 * 1024
 		},
 		{
 			name: "invalid size format",
 			config: RotationConfig{
-				Method:  "truncate",
-				MaxSize: "invalid",
+				Method: "truncate",
+				Size:   "invalid",
 			},
 			expectErr: true,
 		},
 		{
 			name: "invalid number value",
 			config: RotationConfig{
-				Method:  "truncate",
-				MaxSize: "1.5.5KB",
+				Method: "truncate",
+				Size:   "1.5.5KB",
 			},
 			expectErr: true,
 		},
 		{
 			name: "missing method",
 			config: RotationConfig{
-				MaxSize: "100",
+				Size: "100",
 			},
 			expectErr: true,
 		},
 		{
 			name: "unsupported method",
 			config: RotationConfig{
-				Method:  "unsupported",
-				MaxSize: "100",
+				Method: "unsupported",
+				Size:   "100",
 			},
 			expectErr: true,
 		},
 		{
-			name: "rename method",
+			name: "rename method without run",
 			config: RotationConfig{
-				Method:  "rename",
-				MaxSize: "100",
+				Method: "rename",
+				Size:   "100",
+				Run:    "true",
 			},
 			expectErr: false,
-			maxSize:   100,
+			size:      100,
+		},
+		{
+			name: "rename method without run",
+			config: RotationConfig{
+				Method: "rename",
+				Size:   "100",
+			},
+			expectErr: true,
+			size:      100,
 		},
 		{
 			name: "case insensitive method",
 			config: RotationConfig{
-				Method:  "TRUNCATE",
-				MaxSize: "100",
+				Method: "TRUNCATE",
+				Size:   "100",
 			},
 			expectErr: false,
-			maxSize:   100,
+			size:      100,
 		},
 	}
 
@@ -111,7 +121,7 @@ func TestRotationConfig_Init(t *testing.T) {
 				require.Error(t, err)
 			} else {
 				require.NoError(t, err)
-				require.Equal(t, tt.maxSize, tt.config.maxSize)
+				require.Equal(t, tt.size, tt.config.size)
 
 				// Check correct rotator type was assigned
 				if tt.config.Method != "" {
@@ -145,7 +155,7 @@ func TestRotationConfig_CheckSize(t *testing.T) {
 		{
 			name: "size less than max",
 			config: &RotationConfig{
-				maxSize: 100,
+				size: 100,
 			},
 			size:     50,
 			expected: false,
@@ -153,7 +163,7 @@ func TestRotationConfig_CheckSize(t *testing.T) {
 		{
 			name: "size equal to max",
 			config: &RotationConfig{
-				maxSize: 100,
+				size: 100,
 			},
 			size:     100,
 			expected: true,
@@ -161,15 +171,15 @@ func TestRotationConfig_CheckSize(t *testing.T) {
 		{
 			name: "size greater than max",
 			config: &RotationConfig{
-				maxSize: 100,
+				size: 100,
 			},
 			size:     150,
 			expected: true,
 		},
 		{
-			name: "maxSize zero",
+			name: "size zero",
 			config: &RotationConfig{
-				maxSize: 0,
+				size: 0,
 			},
 			size:     100,
 			expected: false,
@@ -260,9 +270,9 @@ func TestRotationConfig_Rotate(t *testing.T) {
 
 	// Configure rotation with a shell script to run
 	config := &RotationConfig{
-		Method:  "truncate",
-		MaxSize: "10",
-		Run:     `printf "` + outputContent + `" > ` + outputFile,
+		Method: "truncate",
+		Size:   "10",
+		Run:    `printf "` + outputContent + `" > ` + outputFile,
 	}
 	err = config.Init()
 	require.NoError(t, err)
