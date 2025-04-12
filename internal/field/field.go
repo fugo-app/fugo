@@ -70,8 +70,13 @@ func (f *Field) Init() error {
 		return nil
 	}
 
-	switch f.Type {
-	case "", "string":
+	ty := strings.ToLower(f.Type)
+	if ty == "" {
+		ty = "string"
+	}
+
+	switch ty {
+	case "string":
 		f.converter = &stringConverter{source}
 	case "int":
 		f.converter = &intConverter{source}

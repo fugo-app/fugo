@@ -40,7 +40,7 @@ func main() {
 	}
 
 	if *helpFlag {
-		fmt.Printf("Fugo is log parsing and processing agent\n\n")
+		fmt.Printf("Fugo is a lightweight log collection and querying agent\n\n")
 		pflag.Usage()
 		os.Exit(0)
 	}

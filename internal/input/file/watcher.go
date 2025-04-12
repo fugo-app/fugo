@@ -47,11 +47,12 @@ func (fw *FileWatcher) Init(processor input.Processor) error {
 		return fmt.Errorf("path must be absolute: %s", fw.Path)
 	}
 
-	if fw.Format == "" {
-		fw.Format = "plain"
+	format := strings.ToLower(fw.Format)
+	if format == "" {
+		format = "plain"
 	}
 
-	if fw.Format == "plain" {
+	if format == "plain" {
 		if fw.Regex == "" {
 			return fmt.Errorf("regex is required for plain format")
 		}
@@ -62,7 +63,7 @@ func (fw *FileWatcher) Init(processor input.Processor) error {
 		} else {
 			fw.parser = p
 		}
-	} else if fw.Format == "json" {
+	} else if format == "json" {
 		p, err := newJsonParser()
 		if err != nil {
 			return fmt.Errorf("json parser: %w", err)
@@ -70,7 +71,7 @@ func (fw *FileWatcher) Init(processor input.Processor) error {
 			fw.parser = p
 		}
 	} else {
-		return fmt.Errorf("unsupported format: %s", fw.Format)
+		return fmt.Errorf("unsupported format: %s", format)
 	}
 
 	dir, pattern := filepath.Split(fw.Path)

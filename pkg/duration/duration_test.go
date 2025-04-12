@@ -34,7 +34,7 @@ func Test_Parse(t *testing.T) {
 			want:  time.Hour + (30 * time.Minute),
 		},
 		{
-			input: "2d3h",
+			input: "2D3H",
 			want:  (24 + 24 + 3) * time.Hour,
 		},
 		{

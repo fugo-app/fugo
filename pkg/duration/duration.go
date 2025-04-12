@@ -10,11 +10,11 @@ import (
 var reMatch = regexp.MustCompile(`(?i)^(\d+[smhd])+$`)
 var reParts = regexp.MustCompile(`(?i)(\d+)([smhd])`)
 
-var unitMap = map[string]time.Duration{
-	"s": time.Second,
-	"m": time.Minute,
-	"h": time.Hour,
-	"d": time.Hour * 24,
+var unitMap = map[byte]time.Duration{
+	's': time.Second,
+	'm': time.Minute,
+	'h': time.Hour,
+	'd': time.Hour * 24,
 }
 
 func Match(input string) bool {
@@ -35,7 +35,12 @@ func Parse(input string) (time.Duration, error) {
 		}
 
 		value, _ := strconv.Atoi(match[1])
-		unit := unitMap[match[2]]
+
+		key := match[2][0]
+		if key >= 'A' && key <= 'Z' {
+			key += 'a' - 'A' // Convert to lowercase
+		}
+		unit := unitMap[key]
 
 		total += time.Duration(value) * unit
 	}
