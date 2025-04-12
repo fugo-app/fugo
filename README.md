@@ -81,7 +81,7 @@ file:
   regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
   rotate:
     method: truncate
-    max_size: 10M
+    max_size: 10mb
 retention:
   period: 3d
   interval: 1h
