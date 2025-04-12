@@ -46,27 +46,52 @@ Options for file-based input:
 
 Agents configuration located in the `agents` sub-directory (e.g. `/etc/fugo/agents/nginx-access.yaml`). Each agent is defined in its own YAML file.
 
-Example, configuration for nginx access log `/etc/fugo/agents/nginx-access.yaml`:
+### Example: Nginx Access Log
+
+Nginx configuration to write logs in json format:
+
+```nginx
+http {
+    log_format json escape=json '{'
+                                '"time":"$msec",'
+                                '"host":"$host",'
+                                '"ip":"$remote_addr",'
+                                '"method":"$request_method",'
+                                '"uri":"$request_uri",'
+                                '"status": "$status"'
+                                '}';
+
+    access_log /var/log/nginx/access.log json;
+}
+```
+
+Configuration for nginx access log `/etc/fugo/agents/nginx-access.yaml`:
 
 ```yaml
 fields:
   - name: time
     timestamp:
-      format: common
+      format: unix
+  - name: host
+  - name: ip
+  - name: method
+  - name: uri
   - name: status
     type: int
-  - name: message
-    template: "{{.method}} {{.path}}"
 file:
   path: /var/log/nginx/access.log
-  format: plain
-  regex: '^(?P<remote_addr>[^ ]+) - (?P<remote_user>[^ ]+) \[(?P<time>[^\]]+)\] "(?P<method>[^ ]+) (?P<path>[^ ]+) (?P<protocol>[^"]+)" (?P<status>[^ ]+)'
+  format: json
+  rotate:
+    method: truncate
+    max_size: 1mb
 retention:
   period: 7d
   interval: 1h
 ```
 
-Example, configuration for nginx error log `/etc/fugo/agents/nginx-error.yaml`:
+### Example: Nginx Error Log
+
+Configuration for nginx error log `/etc/fugo/agents/nginx-error.yaml`:
 
 ```yaml
 fields:
@@ -81,7 +106,7 @@ file:
   regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
   rotate:
     method: truncate
-    max_size: 10mb
+    max_size: 1mb
 retention:
   period: 3d
   interval: 1h
