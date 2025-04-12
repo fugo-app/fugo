@@ -79,6 +79,9 @@ file:
   path: /var/log/nginx/error.log
   format: plain
   regex: '^(?P<time>[^ ]+ [^ ]+) \[(?P<level>[^\]]+)\] \d+#\d+: (?P<message>.*)'
+  rotate:
+    method: truncate
+    max_size: 10M
 retention:
   period: 3d
   interval: 1h
@@ -119,6 +122,7 @@ File-based input has the following configuration:
 - `path`: Path to the log file or regex pattern to match multiple files.
 - `format`: The format of the log file. Supported formats are `plain` and `json`.
 - `regex`: A regex pattern to match the plain log lines. Named capture groups are used to extract fields.
+- `rotate`: Configuration for log rotation.
 
 ### Path Configuration
 
@@ -129,6 +133,16 @@ path: '/var/log/nginx/access_(?P<host>.*)\.log'
 ```
 
 A named capture group should be in the file name only and can be used in the fields.
+
+### Log Rotate
+
+Cleanup the log file when it reaches a certain size. The `rotate` configuration has the following options:
+
+- `method`: The method to use for log rotation. Supported methods are `truncate` and `rename`.
+  - `truncate`: Truncate the log file to zero size.
+  - `rename`: Rename the log file and create a new one. The old file will be removed.
+- `max_size`: The maximum size of the log file before rotation. It can be specified in bytes, kilobytes (kb) or megabytes (mb).
+- `run`: The command to run after rotation. It can be a shell command or a script. This option required if `method` is `rename`.
 
 ## Retention Configuration
 

@@ -29,6 +29,9 @@ type FileWatcher struct {
 	// Example: `(?P<time>[^ ]+) (?P<level>[^ ]+) (?P<message>.*)`
 	Regex string `yaml:"regex,omitempty"`
 
+	// File rotation
+	Rotate *RotationConfig `yaml:"rotate,omitempty"`
+
 	dir       string         // Base directory for the path
 	re        *regexp.Regexp // Regex to match the file name
 	parser    fileParser     // Line parser
@@ -86,6 +89,12 @@ func (fw *FileWatcher) Init(processor input.Processor) error {
 	fw.processor = processor
 	fw.workers = make(map[string]*fileWorker)
 
+	if fw.Rotate != nil {
+		if err := fw.Rotate.Init(); err != nil {
+			return fmt.Errorf("log rotate: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -122,7 +131,7 @@ func (fw *FileWatcher) startWorker(path string, watcher *fsnotify.Watcher) {
 		data[name] = match[i]
 	}
 
-	worker, err := newFileWorker(path, data, fw.parser, fw.processor)
+	worker, err := newFileWorker(path, data, fw.parser, fw.Rotate, fw.processor)
 	if err != nil {
 		log.Printf("failed to create worker (%s): %v", path, err)
 		return

@@ -64,6 +64,7 @@ func TestFileWorker_tail(t *testing.T) {
 			"source": "test",
 		},
 		mockParser,
+		nil,
 		mockProcessor,
 	)
 	require.NoError(t, err, "Failed to create file worker")
