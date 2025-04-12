@@ -131,6 +131,9 @@ func (fw *fileWorker) tail() {
 				log.Printf("failed to rotate log (%s): %v", fw.path, err)
 				return
 			}
+
+			fw.offset = 0
+			setOffset(fw.path, 0)
 		}
 	}
 }
