@@ -101,13 +101,14 @@ Each field can be defined with:
 
 ### Timestamp Configuration
 
-- `format`: Format for the time field (e.g., `rfc3339`, `common`, `stamp`, `unix` or a custom Go layout)
+- `format`: Format for the time field
 
 Formats:
 
 - `rfc3339`: Format used in structured logs and JSON `2006-01-02T15:04:05Z07:00`
-- `common`: Web server log format, e.g. Apache or Nginx: `02/Jan/2006:15:04:05 -0700`
-- `stamp`: Stamp format, common in system logs: `Jan _2 15:04:05`
+- `rfc3339nano`: High precision format with nanoseconds: `2006-01-02T15:04:05.999999999Z07:00` (Podman, Docker, Kubernetes)
+- `common`: Web server log format: `02/Jan/2006:15:04:05 -0700` (Nginx, Apache)
+- `stamp`: Stamp format: `Jan _2 15:04:05` (System logs)
 - `unix`: Unix timestamp in seconds, optionally with fractional part for milliseconds: `1617715200.123`
 - Use any valid Go time format string for custom logs, e.g. `02 Jan 2006 15:04:05`
 

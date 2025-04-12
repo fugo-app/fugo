@@ -28,11 +28,20 @@ type TimestampFormat struct {
 // Init initializes the TimestampFormat by converting the Format field
 // to the corresponding Go time layout format stored in layout.
 func (t *TimestampFormat) Init() error {
+	format := strings.ToLower(t.Format)
+	if format == "" {
+		format = "rfc3339"
+	}
+
 	// Convert named formats to Go time layout format
-	switch t.Format {
-	case "", "rfc3339":
+	switch format {
+	case "rfc3339":
 		t.parser = &stdTimeParser{
 			layout: time.RFC3339,
+		}
+	case "rfc3339nano":
+		t.parser = &stdTimeParser{
+			layout: time.RFC3339Nano,
 		}
 	case "common":
 		// Common log format used by web servers
