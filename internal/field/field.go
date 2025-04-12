@@ -83,7 +83,7 @@ func (f *Field) Init() error {
 	case "float":
 		f.converter = &floatConverter{source}
 	default:
-		return fmt.Errorf("invalid field type '%s' for field '%s'", f.Type, f.Name)
+		return fmt.Errorf("invalid field type '%s' for field '%s'", ty, f.Name)
 	}
 
 	return nil
