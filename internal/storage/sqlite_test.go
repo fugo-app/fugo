@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -224,100 +223,7 @@ func TestSQLiteStorage_Cleanup(t *testing.T) {
 	require.NoError(t, storage.Open(), "Failed to open SQLite database")
 	defer storage.Close()
 
-	tableName := "test_cleanup"
-	fieldName := "time"
-
-	fields := testSqlite_InitFields(t, []*field.Field{
-		{
-			Name: "time",
-			Timestamp: &field.TimestampFormat{
-				Format: "2006-01-02 15:04:05",
-			},
-		},
-		{Name: "message", Type: "string"},
-	})
-
-	require.NoError(t, storage.createTable(tableName, fields), "Failed to create table")
-
-	now := time.Now().Unix()
-
-	// Insert test data with different timestamps
-	testData := []map[string]any{
-		{"time": now - (3600 * 24 * 7), "message": "one week old message"},
-		{"time": now - (3600 * 24 * 3), "message": "three days old message"},
-		{"time": now - (3600 * 24), "message": "one day old message"},
-		{"time": now - 3600, "message": "one hour old message"},
-		{"time": now, "message": "current message"},
-	}
-
-	// Insert all test records
-	for _, data := range testData {
-		require.NoError(t, storage.insertData(tableName, data), "Failed to insert test data")
-	}
-
-	tests := []struct {
-		name      string
-		tableName string
-		fieldName string
-		retention time.Duration
-		wantCount int
-		wantErr   bool
-	}{
-		{
-			name:      "10 days retention",
-			tableName: tableName,
-			fieldName: fieldName,
-			retention: 10 * 24 * time.Hour,
-			wantCount: 5, // 10 days retention, should keep all records
-		},
-		{
-			name:      "2 days retention",
-			tableName: tableName,
-			fieldName: fieldName,
-			retention: 2 * 24 * time.Hour,
-			wantCount: 3,
-		},
-		{
-			name:      "6 hours retention",
-			tableName: tableName,
-			fieldName: fieldName,
-			retention: 6 * time.Hour,
-			wantCount: 2,
-		},
-		{
-			name:      "non-existent field",
-			tableName: tableName,
-			fieldName: "non_existent_field",
-			retention: 24 * time.Hour,
-			wantErr:   true,
-		},
-		{
-			name:      "non-existent table",
-			tableName: "non_existent_table",
-			fieldName: fieldName,
-			retention: 24 * time.Hour,
-			wantErr:   true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := storage.Cleanup(tt.tableName, tt.fieldName, tt.retention)
-			if tt.wantErr {
-				require.Error(t, err, "Expected an error but got none")
-			} else {
-				require.NoError(t, err, "Cleanup operation failed")
-
-				var count int
-				err := storage.db.
-					QueryRow(fmt.Sprintf("SELECT COUNT(*) FROM `%s`", tt.tableName)).
-					Scan(&count)
-				require.NoError(t, err, "Failed to count records")
-
-				require.Equal(t, tt.wantCount, count, "Record count mismatch after cleanup")
-			}
-		})
-	}
+	testStorage_Cleanup(t, storage)
 }
 
 func TestSQLiteStorage_insertData(t *testing.T) {

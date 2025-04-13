@@ -11,38 +11,10 @@ import (
 	"github.com/fugo-app/fugo/internal/field"
 )
 
-type privateStorageDriver interface {
-	createTable(name string, fields []*field.Field) error
-	insertData(name string, data map[string]any) error
-}
-
 type queryTest struct {
 	name     string
 	modifier func(q *Query)
 	want     []map[string]any
-}
-
-func testQuery_InitDriver(
-	t *testing.T,
-	name string,
-	storage StorageDriver,
-	fields []*field.Field,
-	data []map[string]any,
-) {
-	ps, ok := storage.(privateStorageDriver)
-	require.True(t, ok, "Storage driver does not implement privateStorageDriver")
-
-	for _, item := range fields {
-		require.NoError(t, item.Init(), "Failed to initialize field: %s", item.Name)
-	}
-
-	// Create the table
-	require.NoError(t, ps.createTable(name, fields), "Failed to create table")
-
-	// Insert test data
-	for _, item := range data {
-		require.NoError(t, ps.insertData(name, item), "Failed to insert test data")
-	}
 }
 
 func testQuery_CheckResult(t *testing.T, name string, storage StorageDriver, tests []*queryTest) {
@@ -93,7 +65,7 @@ func testQuery_Number(t *testing.T, storage StorageDriver) {
 		{"status": int64(400)},
 	}
 
-	testQuery_InitDriver(t, name, storage, fields, testData)
+	testStorage_InitDriver(t, name, storage, fields, testData)
 
 	tests := []*queryTest{
 		{
@@ -230,7 +202,7 @@ func testQuery_String(t *testing.T, storage StorageDriver) {
 		{"message": "green apple"},
 	}
 
-	testQuery_InitDriver(t, name, storage, fields, testData)
+	testStorage_InitDriver(t, name, storage, fields, testData)
 
 	tests := []*queryTest{
 		{
@@ -311,7 +283,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{"time": int64(1735833600000)}, // 2025-01-02 16:00:00
 	}
 
-	testQuery_InitDriver(t, name, storage, fields, testData)
+	testStorage_InitDriver(t, name, storage, fields, testData)
 
 	tests := []*queryTest{
 		{

@@ -118,7 +118,7 @@ func (ss *SQLiteStorage) Migrate(name string, fields []*field.Field) error {
 
 func (ss *SQLiteStorage) Cleanup(name string, field string, retention time.Duration) error {
 	query := fmt.Sprintf("DELETE FROM `%s` WHERE `%s` < ?", name, field)
-	value := time.Now().Add(-retention).Unix()
+	value := time.Now().Add(-retention).UnixMilli()
 
 	_, err := ss.db.Exec(query, value)
 	if err != nil {
