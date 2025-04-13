@@ -30,10 +30,10 @@ func TestRotationConfig_Init(t *testing.T) {
 			name: "valid KB value",
 			config: RotationConfig{
 				Method: "truncate",
-				Size:   "1.5KB",
+				Size:   "15KB",
 			},
 			expectErr: false,
-			size:      1536, // 1.5 * 1024
+			size:      15 * 1024,
 		},
 		{
 			name: "valid MB value",
@@ -42,16 +42,16 @@ func TestRotationConfig_Init(t *testing.T) {
 				Size:   "2MB",
 			},
 			expectErr: false,
-			size:      2097152, // 2 * 1024 * 1024
+			size:      2 * 1024 * 1024,
 		},
 		{
 			name: "case insensitive unit",
 			config: RotationConfig{
 				Method: "truncate",
-				Size:   "1.5Kb",
+				Size:   "15kb",
 			},
 			expectErr: false,
-			size:      1536, // 1.5 * 1024
+			size:      15 * 1024,
 		},
 		{
 			name: "invalid size format",
@@ -65,7 +65,7 @@ func TestRotationConfig_Init(t *testing.T) {
 			name: "invalid number value",
 			config: RotationConfig{
 				Method: "truncate",
-				Size:   "1.5.5KB",
+				Size:   "1.5KB",
 			},
 			expectErr: true,
 		},

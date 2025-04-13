@@ -28,7 +28,7 @@ type fileRotator interface {
 	Rotate(string) error
 }
 
-var reSize = regexp.MustCompile(`(?i)^(\d+(?:\.\d+)?)([km]b)?$`)
+var reSize = regexp.MustCompile(`(?i)^(\d+)([km]b)?$`)
 
 func (rc *RotationConfig) Init() error {
 	matches := reSize.FindStringSubmatch(rc.Size)
@@ -37,20 +37,22 @@ func (rc *RotationConfig) Init() error {
 	}
 
 	val, unit := matches[1], strings.ToLower(matches[2])
-	num, err := strconv.ParseFloat(val, 64)
+	num, err := strconv.ParseInt(val, 10, 32)
 	if err != nil {
 		return fmt.Errorf("invalid number: %w", err)
 	}
 
-	multiplier := float64(1)
+	var multiplier int64
 	switch unit {
 	case "kb":
 		multiplier = 1024
 	case "mb":
 		multiplier = 1024 * 1024
+	default:
+		multiplier = 1
 	}
 
-	rc.size = int64(num * multiplier)
+	rc.size = num * multiplier
 
 	method := strings.ToLower(rc.Method)
 	switch method {
