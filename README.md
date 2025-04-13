@@ -5,9 +5,9 @@ A lightweight log collection and querying agent. Tail your logs, store in SQLite
 ## Features
 
 - Collect logs from json or text files
-- Convert logs structured data
-- Store logs in SQLite
-- Query logs via HTTP
+- Convert logs into structured data
+- Store logs in SQLite database
+- Query logs via HTTP API
 
 ## Installation
 
@@ -29,4 +29,4 @@ sudo systemctl enable fugo
 
 ## Documentation
 
-[Read the documentation](https://fugo.app/guides/quick-start/)
+[Read the Documentation](https://fugo.app/guides/quick-start/)

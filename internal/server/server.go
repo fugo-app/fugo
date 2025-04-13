@@ -19,7 +19,7 @@ type ServerConfig struct {
 	Listen string `yaml:"listen"`
 
 	// CORS
-	Cors *CorsConfig `yaml:"cors"`
+	Cors *CorsConfig `yaml:"cors,omitempty"`
 
 	server  *http.Server
 	storage storage.StorageDriver
