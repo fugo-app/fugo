@@ -42,7 +42,7 @@ jobs:
       - name: Setup version
         run: |
           echo "VERSION=${GITHUB_REF_NAME:1}" >> $GITHUB_ENV
-          echo "OUT_NAME=fugo-linux-${{ matrix.arch }}" >> $GITHUB_ENV
+          echo "ARCHIVE_NAME=fugo-linux-${{ matrix.arch }}.tar.gz" >> $GITHUB_ENV
 
       - name: Download musl toolchain
         shell: bash
@@ -60,20 +60,20 @@ jobs:
           CC: ${{ github.workspace }}/toolchain/${{ matrix.cc_prefix }}-cross/bin/${{ matrix.cc_prefix }}-gcc
         run: |
           go build \
-            -o ${{ env.OUT_NAME }} \
+            -o fugo \
             -ldflags "-s -w -linkmode external -extldflags -static -X main.Version=${{ env.VERSION }}" \
             -trimpath \
             -v \
             ./cmd/fugo
 
-      - name: Zip
+      - name: Archive
         shell: bash
         run: |
-          zip -r ${{ env.OUT_NAME }}.zip ${{ env.OUT_NAME }}
+          tar -zcf ${{ env.ARCHIVE_NAME }} fugo
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
           draft: true
           files: |
-            ${{ env.OUT_NAME }}.zip
+            ${{ env.ARCHIVE_NAME }}
