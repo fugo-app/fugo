@@ -15,7 +15,7 @@ import (
 
 type ServerConfig struct {
 	// Listen address and port for HTTP server
-	// Example: "127.0.0.1:2221" or ":2221"
+	// Example: "127.0.0.1:2111" or ":2111"
 	Listen string `yaml:"listen"`
 
 	// CORS
@@ -25,7 +25,7 @@ type ServerConfig struct {
 	storage storage.StorageDriver
 }
 
-const defaultListen = "127.0.0.1:2221"
+const defaultListen = "127.0.0.1:2111"
 
 func (sc *ServerConfig) InitDefault() {
 	sc.Listen = defaultListen
