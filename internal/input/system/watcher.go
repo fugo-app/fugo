@@ -65,6 +65,8 @@ func (sw *SystemWatcher) watch() {
 func (sw *SystemWatcher) collect() error {
 	data := make(map[string]any)
 
+	data["time"] = time.Now().UnixMilli()
+
 	// Uptime
 	uptime, err := host.Uptime()
 	if err != nil {
