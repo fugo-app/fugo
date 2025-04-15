@@ -98,5 +98,13 @@ func (a *Agent) Process(data map[string]string) {
 		}
 	}
 
-	a.storage.Write(a.name, result)
+	a.Write(result)
+}
+
+func (a *Agent) Write(data map[string]any) {
+	if len(data) == 0 {
+		return
+	}
+
+	a.storage.Write(a.name, data)
 }

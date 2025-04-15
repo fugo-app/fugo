@@ -33,6 +33,8 @@ func (p *mockProcessor) Process(data map[string]string) {
 	p.processed = append(p.processed, data)
 }
 
+func (p *mockProcessor) Write(data map[string]any) {}
+
 func TestFileWorker_tail(t *testing.T) {
 	// Create mocks
 	mockParser := &mockParser{}

@@ -72,7 +72,7 @@ func (rc *RetentionConfig) run() {
 		select {
 		case <-ticker.C:
 			if err := rc.storage.Cleanup(rc.name, rc.field, rc.period); err != nil {
-				log.Printf("retention cleanup for %s: %v", rc.name, err)
+				log.Printf("Error on retention cleanup for %s: %v", rc.name, err)
 			}
 		case <-rc.stop:
 			return
