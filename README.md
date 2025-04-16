@@ -5,6 +5,7 @@ A lightweight log collection and querying agent. Tail your logs, store in SQLite
 ## Features
 
 - Collect logs from json or text files
+- Collect basic system metrics (cpu, mem, disk, network)
 - Convert logs into structured data
 - Store logs in SQLite database
 - Query logs via HTTP API
