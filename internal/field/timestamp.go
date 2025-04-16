@@ -26,6 +26,10 @@ type TimestampFormat struct {
 }
 
 func (t *TimestampFormat) Clone() *TimestampFormat {
+	if t == nil {
+		return nil
+	}
+
 	return &TimestampFormat{
 		Format: t.Format,
 	}

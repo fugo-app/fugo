@@ -30,6 +30,10 @@ type Field struct {
 }
 
 func (f *Field) Clone() *Field {
+	if f == nil {
+		return nil
+	}
+
 	return &Field{
 		Name:      f.Name,
 		Source:    f.Source,
