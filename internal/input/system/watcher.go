@@ -16,7 +16,8 @@ type SystemWatcher struct {
 	interval  time.Duration
 	processor input.Processor
 
-	cpu cpuUsage
+	cpu cpuInfo
+	net netInfo
 
 	stop chan struct{}
 }
@@ -86,7 +87,7 @@ func (sw *SystemWatcher) collect() error {
 		return err
 	}
 
-	if err := collectNet(data); err != nil {
+	if err := sw.net.collect(data); err != nil {
 		return err
 	}
 

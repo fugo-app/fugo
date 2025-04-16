@@ -9,12 +9,12 @@ import (
 	"github.com/shirou/gopsutil/v4/load"
 )
 
-type cpuUsage struct {
+type cpuInfo struct {
 	usage float64
 	idle  float64
 }
 
-func (c *cpuUsage) collect(data map[string]any) error {
+func (ci *cpuInfo) collect(data map[string]any) error {
 	// Load average
 	loadAvg, err := load.Avg()
 	if err != nil {
@@ -41,9 +41,9 @@ func (c *cpuUsage) collect(data map[string]any) error {
 		cpuTime.GuestNice
 	cpuIdle := cpuTime.Idle + cpuTime.Iowait
 
-	if c.usage != 0 {
-		deltaUsage := cpuUsage - c.usage
-		deltaIdle := cpuIdle - c.idle
+	if ci.usage != 0 {
+		deltaUsage := cpuUsage - ci.usage
+		deltaIdle := cpuIdle - ci.idle
 		total := deltaUsage + deltaIdle
 		data["cpu_usage"] = int64(math.Round(deltaUsage * 100.0 / total))
 	} else {
@@ -52,8 +52,8 @@ func (c *cpuUsage) collect(data map[string]any) error {
 
 	data["cpu_cores"] = int64(runtime.NumCPU())
 
-	c.usage = cpuUsage
-	c.idle = cpuIdle
+	ci.usage = cpuUsage
+	ci.idle = cpuIdle
 
 	return nil
 }
