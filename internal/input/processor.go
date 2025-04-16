@@ -1,8 +1,9 @@
 package input
 
 type Processor interface {
-	// Process convert raw data to a structured data and writes it to the storage
-	Process(data map[string]string)
+	// Serialize converts raw data to a structured data
+	Serialize(data map[string]string) map[string]any
+
 	// Write writes structured data to the storage
 	Write(data map[string]any)
 }

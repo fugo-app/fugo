@@ -110,9 +110,11 @@ func (fw *fileWorker) tail() {
 		if len(line) > 0 {
 			text := string(line)
 
-			if data, err := fw.parser.Parse(text); err == nil {
-				maps.Copy(data, fw.ext)
-				fw.processor.Process(data)
+			if raw, err := fw.parser.Parse(text); err == nil {
+				maps.Copy(raw, fw.ext)
+				if data := fw.processor.Serialize(raw); data != nil {
+					fw.processor.Write(data)
+				}
 			}
 		}
 

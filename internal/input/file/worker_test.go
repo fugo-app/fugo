@@ -24,16 +24,22 @@ func (p *mockParser) Parse(text string) (map[string]string, error) {
 
 type mockProcessor struct {
 	mu        sync.Mutex
-	processed []map[string]string
+	processed []map[string]any
 }
 
-func (p *mockProcessor) Process(data map[string]string) {
+func (p *mockProcessor) Serialize(data map[string]string) map[string]any {
+	result := make(map[string]any, len(data))
+	for k, v := range data {
+		result[k] = v
+	}
+	return result
+}
+
+func (p *mockProcessor) Write(data map[string]any) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.processed = append(p.processed, data)
 }
-
-func (p *mockProcessor) Write(data map[string]any) {}
 
 func TestFileWorker_tail(t *testing.T) {
 	// Create mocks
@@ -79,7 +85,7 @@ func TestFileWorker_tail(t *testing.T) {
 	require.Len(t, mockProcessor.processed, 3, "Processor should process 3 lines")
 
 	// Verify the content of processed data
-	expected := []map[string]string{
+	expected := []map[string]any{
 		{"line": "line1", "source": "test"},
 		{"line": "line2", "source": "test"},
 		{"line": "line3", "source": "test"},
@@ -101,7 +107,7 @@ func TestFileWorker_tail(t *testing.T) {
 
 	// Reset mock processor data for clarity
 	mockProcessor.mu.Lock()
-	mockProcessor.processed = []map[string]string{}
+	mockProcessor.processed = []map[string]any{}
 	mockProcessor.mu.Unlock()
 
 	// Call tail() again
@@ -111,7 +117,7 @@ func TestFileWorker_tail(t *testing.T) {
 	require.Equal(t, 5, mockParser.calls, "Parser should be called 2 more times")
 	require.Len(t, mockProcessor.processed, 2, "Processor should process 2 new lines")
 
-	expected = []map[string]string{
+	expected = []map[string]any{
 		{"line": "line4", "source": "test"},
 		{"line": "line5", "source": "test"},
 	}
@@ -129,7 +135,7 @@ func TestFileWorker_tail(t *testing.T) {
 
 	// Reset mock processor data again
 	mockProcessor.mu.Lock()
-	mockProcessor.processed = []map[string]string{}
+	mockProcessor.processed = []map[string]any{}
 	mockProcessor.mu.Unlock()
 
 	// Call tail() again
@@ -139,7 +145,7 @@ func TestFileWorker_tail(t *testing.T) {
 	require.Equal(t, 6, mockParser.calls, "Parser should be called once more")
 	require.Len(t, mockProcessor.processed, 1, "Processor should process 1 line from truncated file")
 
-	expected = []map[string]string{
+	expected = []map[string]any{
 		{"line": "truncated", "source": "test"},
 	}
 	require.Equal(t, expected, mockProcessor.processed, "Processed data doesn't match")

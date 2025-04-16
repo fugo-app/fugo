@@ -11,8 +11,10 @@ import (
 
 type dummyProcessor struct{}
 
-func (d *dummyProcessor) Process(data map[string]string) {}
-func (d *dummyProcessor) Write(data map[string]any)      {}
+func (d *dummyProcessor) Serialize(data map[string]string) map[string]any {
+	return nil
+}
+func (d *dummyProcessor) Write(data map[string]any) {}
 
 func TestFileWatcher_WorkerManagement(t *testing.T) {
 	// Create a temporary directory for the test

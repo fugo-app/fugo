@@ -81,10 +81,9 @@ func (a *Agent) Stop() {
 	a.Retention.Stop()
 }
 
-// Process receives raw data from input and converts to the logs record.
-func (a *Agent) Process(data map[string]string) {
+func (a *Agent) Serialize(data map[string]string) map[string]any {
 	if len(data) == 0 {
-		return
+		return nil
 	}
 
 	result := make(map[string]any)
@@ -98,7 +97,7 @@ func (a *Agent) Process(data map[string]string) {
 		}
 	}
 
-	a.Write(result)
+	return result
 }
 
 func (a *Agent) Write(data map[string]any) {
