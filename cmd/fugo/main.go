@@ -100,10 +100,6 @@ func (a *appInstance) loadAgents(configDir string) error {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 
-		if err := a.Storage.Migrate(name, agent.Fields); err != nil {
-			return fmt.Errorf("migrate agent (%s): %w", name, err)
-		}
-
 		a.agents[name] = agent
 	}
 

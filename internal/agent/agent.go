@@ -62,6 +62,10 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 		return fmt.Errorf("retention init: %w", err)
 	}
 
+	if err := a.storage.Migrate(name, a.Fields); err != nil {
+		return fmt.Errorf("migrate agent (%s): %w", name, err)
+	}
+
 	return nil
 }
 
