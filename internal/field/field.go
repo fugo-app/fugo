@@ -29,6 +29,16 @@ type Field struct {
 	converter fieldConverter
 }
 
+func (f *Field) Clone() *Field {
+	return &Field{
+		Name:      f.Name,
+		Source:    f.Source,
+		Type:      f.Type,
+		Template:  f.Template,
+		Timestamp: f.Timestamp.Clone(),
+	}
+}
+
 func (f *Field) Init() error {
 	if !regexp.MustCompile(`^[a-z][a-z0-9_]*$`).MatchString(f.Name) {
 		return fmt.Errorf("invalid field name '%s'", f.Name)

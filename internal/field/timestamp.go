@@ -25,6 +25,12 @@ type TimestampFormat struct {
 	parser timeParser
 }
 
+func (t *TimestampFormat) Clone() *TimestampFormat {
+	return &TimestampFormat{
+		Format: t.Format,
+	}
+}
+
 // Init initializes the TimestampFormat by converting the Format field
 // to the corresponding Go time layout format stored in layout.
 func (t *TimestampFormat) Init() error {

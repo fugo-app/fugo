@@ -20,6 +20,7 @@ type Agent struct {
 	// Retention configuration
 	Retention storage.RetentionConfig `yaml:"retention,omitempty"`
 
+	fields  []*field.Field
 	storage storage.StorageDriver
 }
 
@@ -32,13 +33,18 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 	a.name = name
 
 	if len(a.Fields) == 0 {
-		return fmt.Errorf("fields are required")
+		// Try to set default fields
+	} else {
+		a.fields = make([]*field.Field, len(a.Fields))
+		for i := range a.Fields {
+			a.fields[i] = a.Fields[i].Clone()
+		}
 	}
 
 	var timefield string
 
-	for i := range a.Fields {
-		field := a.Fields[i]
+	for i := range a.fields {
+		field := a.fields[i]
 		if err := field.Init(); err != nil {
 			return fmt.Errorf("field %s init: %w", field.Name, err)
 		}
@@ -62,7 +68,7 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 		return fmt.Errorf("retention init: %w", err)
 	}
 
-	if err := a.storage.Migrate(name, a.Fields); err != nil {
+	if err := a.storage.Migrate(name, a.fields); err != nil {
 		return fmt.Errorf("migrate agent (%s): %w", name, err)
 	}
 
@@ -92,8 +98,8 @@ func (a *Agent) Serialize(data map[string]string) map[string]any {
 
 	result := make(map[string]any)
 
-	for i := range a.Fields {
-		field := a.Fields[i]
+	for i := range a.fields {
+		field := a.fields[i]
 		if val, err := field.Convert(data); err == nil && val != nil {
 			result[field.Name] = val
 		} else {
