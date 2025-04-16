@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/fugo-app/fugo/internal/field"
 	"github.com/fugo-app/fugo/internal/input"
 	"github.com/fugo-app/fugo/pkg/duration"
 	"github.com/shirou/gopsutil/v4/host"
@@ -20,6 +21,35 @@ type SystemWatcher struct {
 	net netInfo
 
 	stop chan struct{}
+}
+
+func (sw *SystemWatcher) Fields() []*field.Field {
+	return []*field.Field{
+		{Name: "time", Type: "time"},
+		{Name: "uptime", Type: "int"},
+		// CPU
+		{Name: "la_1", Type: "int"},
+		{Name: "la_5", Type: "int"},
+		{Name: "la_15", Type: "int"},
+		{Name: "cpu_usage", Type: "float"},
+		{Name: "cpu_cores", Type: "int"},
+		// MEM
+		{Name: "mem_usage", Type: "float"},
+		{Name: "mem_total", Type: "int"},
+		// DISK
+		{Name: "disk_usage", Type: "float"},
+		{Name: "disk_total", Type: "int"},
+		// NET
+		{Name: "net_if", Type: "string"},
+		{Name: "net_rx_bytes", Type: "int"},
+		{Name: "net_tx_bytes", Type: "int"},
+		{Name: "net_rx_packets", Type: "int"},
+		{Name: "net_tx_packets", Type: "int"},
+		{Name: "net_rx_errors", Type: "int"},
+		{Name: "net_tx_errors", Type: "int"},
+		{Name: "net_rx_dropped", Type: "int"},
+		{Name: "net_tx_dropped", Type: "int"},
+	}
 }
 
 func (sw *SystemWatcher) Init(processor input.Processor) error {

@@ -92,6 +92,10 @@ func (f *Field) Init() error {
 		f.converter = &intConverter{source}
 	case "float":
 		f.converter = &floatConverter{source}
+	case "time":
+		// if f.Timestamp is not defined then converter is not needed
+		// process as unix timestamp in milliseconds
+		f.converter = &intConverter{source}
 	default:
 		return fmt.Errorf("invalid field type '%s' for field '%s'", ty, f.Name)
 	}

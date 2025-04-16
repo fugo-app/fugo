@@ -10,8 +10,8 @@ import (
 )
 
 type cpuInfo struct {
-	usage float64
-	idle  float64
+	used float64
+	idle float64
 }
 
 func (ci *cpuInfo) collect(data map[string]any) error {
@@ -31,7 +31,7 @@ func (ci *cpuInfo) collect(data map[string]any) error {
 	}
 
 	cpuTime := cpuTimes[0]
-	cpuUsage := cpuTime.User +
+	cpuUsed := cpuTime.User +
 		cpuTime.Nice +
 		cpuTime.System +
 		cpuTime.Irq +
@@ -41,18 +41,18 @@ func (ci *cpuInfo) collect(data map[string]any) error {
 		cpuTime.GuestNice
 	cpuIdle := cpuTime.Idle + cpuTime.Iowait
 
-	if ci.usage != 0 {
-		deltaUsage := cpuUsage - ci.usage
+	if ci.used != 0 {
+		deltaUsed := cpuUsed - ci.used
 		deltaIdle := cpuIdle - ci.idle
-		total := deltaUsage + deltaIdle
-		data["cpu_usage"] = int64(math.Round(deltaUsage * 100.0 / total))
+		total := deltaUsed + deltaIdle
+		data["cpu_usage"] = math.Round(deltaUsed/total*100*100) / 100
 	} else {
-		data["cpu_usage"] = int64(0)
+		data["cpu_usage"] = float64(0)
 	}
 
 	data["cpu_cores"] = int64(runtime.NumCPU())
 
-	ci.usage = cpuUsage
+	ci.used = cpuUsed
 	ci.idle = cpuIdle
 
 	return nil

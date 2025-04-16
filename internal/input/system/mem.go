@@ -15,7 +15,7 @@ func collectMem(data map[string]any) error {
 
 	used := float64(memStat.Total - memStat.Available)
 	total := float64(memStat.Total)
-	data["mem_usage"] = int64(math.Round(used * 100.0 / total))
+	data["mem_usage"] = math.Round(used/total*100*100) / 100
 
 	data["mem_total"] = int64(memStat.Total)
 

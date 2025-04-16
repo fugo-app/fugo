@@ -13,7 +13,7 @@ func collectDisk(data map[string]any) error {
 		return fmt.Errorf("get disk usage: %w", err)
 	}
 
-	data["disk_usage"] = int64(math.Round(diskStat.UsedPercent))
+	data["disk_usage"] = math.Round(diskStat.UsedPercent*100) / 100
 	data["disk_total"] = int64(diskStat.Total)
 
 	return nil

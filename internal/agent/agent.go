@@ -5,6 +5,7 @@ import (
 
 	"github.com/fugo-app/fugo/internal/field"
 	"github.com/fugo-app/fugo/internal/input/file"
+	"github.com/fugo-app/fugo/internal/input/system"
 	"github.com/fugo-app/fugo/internal/storage"
 )
 
@@ -16,6 +17,9 @@ type Agent struct {
 
 	// File-based input.
 	File *file.FileWatcher `yaml:"file,omitempty"`
+
+	// System telemetry input.
+	System *system.SystemWatcher `yaml:"system,omitempty"`
 
 	// Retention configuration
 	Retention storage.RetentionConfig `yaml:"retention,omitempty"`
@@ -33,7 +37,9 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 	a.name = name
 
 	if len(a.Fields) == 0 {
-		// Try to set default fields
+		if a.System != nil {
+			a.fields = a.System.Fields()
+		}
 	} else {
 		a.fields = make([]*field.Field, len(a.Fields))
 		for i := range a.Fields {
@@ -64,6 +70,12 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 		}
 	}
 
+	if a.System != nil {
+		if err := a.System.Init(a); err != nil {
+			return fmt.Errorf("system agent init: %w", err)
+		}
+	}
+
 	if err := a.Retention.Init(name, timefield, storage); err != nil {
 		return fmt.Errorf("retention init: %w", err)
 	}
@@ -80,12 +92,20 @@ func (a *Agent) Start() {
 		a.File.Start()
 	}
 
+	if a.System != nil {
+		a.System.Start()
+	}
+
 	a.Retention.Start()
 }
 
 func (a *Agent) Stop() {
 	if a.File != nil {
 		a.File.Stop()
+	}
+
+	if a.System != nil {
+		a.System.Stop()
 	}
 
 	a.Retention.Stop()
