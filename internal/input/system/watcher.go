@@ -88,22 +88,28 @@ func (sw *SystemWatcher) Stop() {
 }
 
 func (sw *SystemWatcher) watch() {
+	sw.collect()
+
 	ticker := time.NewTicker(sw.interval)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
-			if err := sw.collect(); err != nil {
-				log.Printf("Error on collecting system status: %v\n", err)
-			}
+			sw.collect()
 		case <-sw.stop:
 			return
 		}
 	}
 }
 
-func (sw *SystemWatcher) collect() error {
+func (sw *SystemWatcher) collect() {
+	if err := sw._collect(); err != nil {
+		log.Printf("Error on collecting system status: %v\n", err)
+	}
+}
+
+func (sw *SystemWatcher) _collect() error {
 	data := make(map[string]any)
 
 	data["time"] = time.Now().UnixMilli()
