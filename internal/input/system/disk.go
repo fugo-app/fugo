@@ -7,8 +7,12 @@ import (
 	"github.com/shirou/gopsutil/v4/disk"
 )
 
-func collectDisk(data map[string]any) error {
-	diskStat, err := disk.Usage("/var/lib")
+type diskInfo struct {
+	Path string
+}
+
+func (di *diskInfo) collect(data map[string]any) error {
+	diskStat, err := disk.Usage(di.Path)
 	if err != nil {
 		return fmt.Errorf("get disk usage: %w", err)
 	}

@@ -12,13 +12,18 @@ import (
 )
 
 type SystemWatcher struct {
-	Interval string `yaml:"interval,omitempty"` // Interval to check the system status. Default is 60s
+	// Interval to check the system status. Default is 60s
+	Interval string `yaml:"interval,omitempty"`
+
+	// Path to check the disk usage. Default is "/var/lib"
+	DiskPath string `yaml:"disk_path,omitempty"`
 
 	interval  time.Duration
 	processor input.Processor
 
-	cpu cpuInfo
-	net netInfo
+	cpu  cpuInfo
+	disk diskInfo
+	net  netInfo
 
 	stop chan struct{}
 }
@@ -62,6 +67,11 @@ func (sw *SystemWatcher) Init(processor input.Processor) error {
 		sw.interval = d
 	}
 	sw.processor = processor
+
+	sw.disk.Path = "/var/lib"
+	if sw.DiskPath != "" {
+		sw.disk.Path = sw.DiskPath
+	}
 
 	return nil
 }
@@ -113,7 +123,7 @@ func (sw *SystemWatcher) collect() error {
 		return err
 	}
 
-	if err := collectDisk(data); err != nil {
+	if err := sw.disk.collect(data); err != nil {
 		return err
 	}
 
