@@ -44,6 +44,7 @@ func (sc *ServerConfig) Open(app AppHandler) error {
 
 	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
 	mux.HandleFunc("/api/schema/{name}", sc.handleSchema)
+	mux.HandleFunc("/api/agents", sc.handleAgents)
 
 	mw := sc.Cors.Middleware(mux)
 
@@ -165,9 +166,10 @@ func (sc *ServerConfig) handleSchema(w http.ResponseWriter, r *http.Request) {
 		Schema []schemaField `json:"schema"`
 	}
 
-	var response schemaResponse
-	response.Name = name
-	response.Schema = make([]schemaField, len(fields))
+	response := schemaResponse{
+		Name:   name,
+		Schema: make([]schemaField, len(fields)),
+	}
 	for i, field := range fields {
 		response.Schema[i].Name = field.Name
 		response.Schema[i].Type = field.Type
@@ -176,6 +178,24 @@ func (sc *ServerConfig) handleSchema(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error sending schema response: %v", err)
+		log.Printf("Error sending /api/schema/%s response: %v", name, err)
+	}
+}
+
+func (sc *ServerConfig) handleAgents(w http.ResponseWriter, r *http.Request) {
+	agents := sc.app.GetAgents()
+
+	type agentsResponse struct {
+		Agents []string `json:"agents"`
+	}
+
+	response := agentsResponse{
+		Agents: agents,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error sending /api/agents response: %v", err)
 	}
 }

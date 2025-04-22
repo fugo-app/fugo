@@ -8,4 +8,5 @@ import (
 type AppHandler interface {
 	GetStorage() storage.StorageDriver
 	GetFields(string) []*field.Field
+	GetAgents() []string
 }

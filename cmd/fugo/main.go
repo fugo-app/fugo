@@ -228,3 +228,11 @@ func (a *appInstance) GetFields(name string) []*field.Field {
 
 	return nil
 }
+
+func (a *appInstance) GetAgents() []string {
+	agentNames := make([]string, 0, len(a.agents))
+	for name := range a.agents {
+		agentNames = append(agentNames, name)
+	}
+	return agentNames
+}
