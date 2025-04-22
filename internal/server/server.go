@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -42,6 +43,7 @@ func (sc *ServerConfig) Open(app AppHandler) error {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/api/query/{name}", sc.handleQuery)
+	mux.HandleFunc("/api/schema/{name}", sc.handleSchema)
 
 	mw := sc.Cors.Middleware(mux)
 
@@ -137,5 +139,43 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	if err := sc.app.GetStorage().Query(w, query); err != nil {
 		log.Printf("Error sending query response: %v", err)
+	}
+}
+
+func (sc *ServerConfig) handleSchema(w http.ResponseWriter, r *http.Request) {
+	name := r.PathValue("name")
+	if name == "" {
+		http.Error(w, "Missing name parameter", http.StatusBadRequest)
+		return
+	}
+
+	schema := sc.app.GetSchema(name)
+	if len(schema) == 0 {
+		http.Error(w, "Schema not found", http.StatusNotFound)
+		return
+	}
+
+	type schemaField struct {
+		Name string `json:"name"`
+		Type string `json:"type"`
+	}
+
+	type schemaResponse struct {
+		Name   string        `json:"name"`
+		Fields []schemaField `json:"fields"`
+	}
+
+	var response schemaResponse
+	response.Name = name
+	response.Fields = make([]schemaField, len(schema))
+	for i, field := range schema {
+		response.Fields[i].Name = field.Name
+		response.Fields[i].Type = field.Type
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error sending schema response: %v", err)
 	}
 }

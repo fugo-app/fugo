@@ -13,6 +13,7 @@ import (
 	"gopkg.in/yaml.v3"
 
 	"github.com/fugo-app/fugo/internal/agent"
+	"github.com/fugo-app/fugo/internal/field"
 	"github.com/fugo-app/fugo/internal/input/file"
 	"github.com/fugo-app/fugo/internal/server"
 	"github.com/fugo-app/fugo/internal/storage"
@@ -218,4 +219,12 @@ func (a *appInstance) stop() {
 
 func (a *appInstance) GetStorage() storage.StorageDriver {
 	return a.Storage.GetDriver()
+}
+
+func (a *appInstance) GetSchema(name string) []*field.Field {
+	if agent, ok := a.agents[name]; ok {
+		return agent.GetSchema()
+	}
+
+	return nil
 }

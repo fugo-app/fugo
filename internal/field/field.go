@@ -84,12 +84,11 @@ func (f *Field) Init() error {
 		return nil
 	}
 
-	ty := strings.ToLower(f.Type)
-	if ty == "" {
-		ty = "string"
+	if f.Type == "" {
+		f.Type = "string"
 	}
 
-	switch ty {
+	switch f.Type {
 	case "string":
 		f.converter = &stringConverter{source}
 	case "int":
@@ -101,7 +100,7 @@ func (f *Field) Init() error {
 		// process as unix timestamp in milliseconds
 		f.converter = &intConverter{source}
 	default:
-		return fmt.Errorf("invalid field type '%s' for field '%s'", ty, f.Name)
+		return fmt.Errorf("invalid field type '%s' for field '%s'", f.Type, f.Name)
 	}
 
 	return nil

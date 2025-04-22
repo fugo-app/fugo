@@ -130,10 +130,16 @@ func (a *Agent) Serialize(data map[string]string) map[string]any {
 	return result
 }
 
+// Write writes the serialized data to the storage.
 func (a *Agent) Write(data map[string]any) {
 	if len(data) == 0 {
 		return
 	}
 
 	a.app.GetStorage().Write(a.name, data)
+}
+
+// GetSchema returns the list of initialized fields for the agent.
+func (a *Agent) GetSchema() []*field.Field {
+	return a.fields
 }
