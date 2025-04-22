@@ -7,5 +7,5 @@ import (
 
 type AppHandler interface {
 	GetStorage() storage.StorageDriver
-	GetSchema(string) []*field.Field
+	GetFields(string) []*field.Field
 }

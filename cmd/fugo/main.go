@@ -221,9 +221,9 @@ func (a *appInstance) GetStorage() storage.StorageDriver {
 	return a.Storage.GetDriver()
 }
 
-func (a *appInstance) GetSchema(name string) []*field.Field {
+func (a *appInstance) GetFields(name string) []*field.Field {
 	if agent, ok := a.agents[name]; ok {
-		return agent.GetSchema()
+		return agent.GetFields()
 	}
 
 	return nil

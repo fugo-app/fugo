@@ -149,9 +149,9 @@ func (sc *ServerConfig) handleSchema(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	schema := sc.app.GetSchema(name)
-	if len(schema) == 0 {
-		http.Error(w, "Schema not found", http.StatusNotFound)
+	fields := sc.app.GetFields(name)
+	if len(fields) == 0 {
+		http.Error(w, "Fields not found", http.StatusNotFound)
 		return
 	}
 
@@ -162,15 +162,15 @@ func (sc *ServerConfig) handleSchema(w http.ResponseWriter, r *http.Request) {
 
 	type schemaResponse struct {
 		Name   string        `json:"name"`
-		Fields []schemaField `json:"fields"`
+		Schema []schemaField `json:"schema"`
 	}
 
 	var response schemaResponse
 	response.Name = name
-	response.Fields = make([]schemaField, len(schema))
-	for i, field := range schema {
-		response.Fields[i].Name = field.Name
-		response.Fields[i].Type = field.Type
+	response.Schema = make([]schemaField, len(fields))
+	for i, field := range fields {
+		response.Schema[i].Name = field.Name
+		response.Schema[i].Type = field.Type
 	}
 
 	w.Header().Set("Content-Type", "application/json")

@@ -139,7 +139,7 @@ func (a *Agent) Write(data map[string]any) {
 	a.app.GetStorage().Write(a.name, data)
 }
 
-// GetSchema returns the list of initialized fields for the agent.
-func (a *Agent) GetSchema() []*field.Field {
+// GetFields returns the list of initialized fields for the agent.
+func (a *Agent) GetFields() []*field.Field {
 	return a.fields
 }
