@@ -120,7 +120,7 @@ func (q *Query) SetFilter(name string, op string, val string) error {
 
 // parseTimestamp converts timestamp string to unix milliseconds.
 // Supported formats:
-// - "2006-01-02 15:04:05" - date and time format
+// - "2006-01-02T15:04:05" - date and time format
 // - "2006-01-02" - date only format
 // - "5d" - relative time (now minus 5 days)
 // - "2h" - relative time (now minus 2 hours)
@@ -134,7 +134,7 @@ func parseTimestamp(val string) (int64, error) {
 	}
 
 	layouts := []string{
-		"2006-01-02 15:04:05",
+		"2006-01-02T15:04:05",
 		"2006-01-02",
 	}
 
