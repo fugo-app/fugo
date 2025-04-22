@@ -21,8 +21,8 @@ type ServerConfig struct {
 	// CORS
 	Cors *CorsConfig `yaml:"cors,omitempty"`
 
-	server  *http.Server
-	storage storage.StorageDriver
+	server *http.Server
+	app    AppHandler
 }
 
 const defaultListen = "127.0.0.1:2111"
@@ -31,8 +31,8 @@ func (sc *ServerConfig) InitDefault() {
 	sc.Listen = defaultListen
 }
 
-func (sc *ServerConfig) Open(storage storage.StorageDriver) error {
-	sc.storage = storage
+func (sc *ServerConfig) Open(app AppHandler) error {
+	sc.app = app
 
 	listen := sc.Listen
 	if listen == "" {
@@ -135,7 +135,7 @@ func (sc *ServerConfig) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/x-ndjson")
 	w.WriteHeader(http.StatusOK)
-	if err := sc.storage.Query(w, query); err != nil {
+	if err := sc.app.GetStorage().Query(w, query); err != nil {
 		log.Printf("Error sending query response: %v", err)
 	}
 }

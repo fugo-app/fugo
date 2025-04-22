@@ -47,18 +47,6 @@ func (sc *StorageConfig) Close() error {
 	return sc.inner.Close()
 }
 
-func (sc *StorageConfig) Migrate(table string, fields []*field.Field) error {
-	return sc.inner.Migrate(table, fields)
-}
-
-func (sc *StorageConfig) Cleanup(table, field string, duration time.Duration) error {
-	return sc.inner.Cleanup(table, field, duration)
-}
-
-func (sc *StorageConfig) Write(table string, data map[string]any) {
-	sc.inner.Write(table, data)
-}
-
-func (sc *StorageConfig) Query(w io.Writer, q *Query) error {
-	return sc.inner.Query(w, q)
+func (sc *StorageConfig) GetDriver() StorageDriver {
+	return sc.inner
 }

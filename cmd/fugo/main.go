@@ -96,7 +96,7 @@ func (a *appInstance) loadAgents(configDir string) error {
 			return fmt.Errorf("parse config (%s): %w", filePath, err)
 		}
 
-		if err := agent.Init(name, &a.Storage); err != nil {
+		if err := agent.Init(name, a); err != nil {
 			return fmt.Errorf("init agent (%s): %w", name, err)
 		}
 
@@ -178,7 +178,7 @@ func (a *appInstance) start(configFile string) error {
 		return fmt.Errorf("open storage: %w", err)
 	}
 
-	if err := a.Server.Open(&a.Storage); err != nil {
+	if err := a.Server.Open(a); err != nil {
 		return fmt.Errorf("open server: %w", err)
 	}
 
@@ -214,4 +214,8 @@ func (a *appInstance) stop() {
 	if err := a.FileInput.Close(); err != nil {
 		log.Println("failed to close file-based input:", err)
 	}
+}
+
+func (a *appInstance) GetStorage() storage.StorageDriver {
+	return a.Storage.GetDriver()
 }

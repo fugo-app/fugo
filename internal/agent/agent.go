@@ -24,12 +24,12 @@ type Agent struct {
 	// Retention configuration
 	Retention storage.RetentionConfig `yaml:"retention,omitempty"`
 
-	fields  []*field.Field
-	storage storage.StorageDriver
+	fields []*field.Field
+	app    AppHandler
 }
 
-func (a *Agent) Init(name string, storage storage.StorageDriver) error {
-	a.storage = storage
+func (a *Agent) Init(name string, app AppHandler) error {
+	a.app = app
 
 	if name == "" {
 		return fmt.Errorf("name is required")
@@ -76,11 +76,11 @@ func (a *Agent) Init(name string, storage storage.StorageDriver) error {
 		}
 	}
 
-	if err := a.Retention.Init(name, timefield, storage); err != nil {
+	if err := a.Retention.Init(name, timefield, a.app.GetStorage()); err != nil {
 		return fmt.Errorf("retention init: %w", err)
 	}
 
-	if err := a.storage.Migrate(name, a.fields); err != nil {
+	if err := a.app.GetStorage().Migrate(name, a.fields); err != nil {
 		return fmt.Errorf("migrate agent (%s): %w", name, err)
 	}
 
@@ -135,5 +135,5 @@ func (a *Agent) Write(data map[string]any) {
 		return
 	}
 
-	a.storage.Write(a.name, data)
+	a.app.GetStorage().Write(a.name, data)
 }
