@@ -33,9 +33,9 @@ func (sw *SystemWatcher) Fields() []*field.Field {
 		{Name: "time", Type: "time"},
 		{Name: "uptime", Type: "int"},
 		// CPU
-		{Name: "la_1", Type: "int"},
-		{Name: "la_5", Type: "int"},
-		{Name: "la_15", Type: "int"},
+		{Name: "la_1", Type: "float"},
+		{Name: "la_5", Type: "float"},
+		{Name: "la_15", Type: "float"},
 		{Name: "cpu_usage", Type: "float"},
 		{Name: "cpu_cores", Type: "int"},
 		// MEM
