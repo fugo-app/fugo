@@ -44,6 +44,8 @@ func (sw *SystemWatcher) Fields() []*field.Field {
 		// DISK
 		{Name: "disk_usage", Type: "float"},
 		{Name: "disk_total", Type: "int"},
+		{Name: "disk_io_read", Type: "int"},
+		{Name: "disk_io_write", Type: "int"},
 		// NET
 		{Name: "net_if", Type: "string"},
 		{Name: "net_rx_bytes", Type: "int"},
@@ -68,10 +70,7 @@ func (sw *SystemWatcher) Init(processor input.Processor) error {
 	}
 	sw.processor = processor
 
-	sw.disk.Path = "/var/lib"
-	if sw.DiskPath != "" {
-		sw.disk.Path = sw.DiskPath
-	}
+	sw.disk.init(sw.DiskPath)
 
 	return nil
 }
