@@ -20,9 +20,9 @@ func (ci *cpuInfo) collect(data map[string]any) error {
 	if err != nil {
 		return fmt.Errorf("get load average: %w", err)
 	}
-	data["la_1"] = loadAvg.Load1
-	data["la_5"] = loadAvg.Load5
-	data["la_15"] = loadAvg.Load15
+	data["la_1"] = math.Round(loadAvg.Load1*100) / 100
+	data["la_5"] = math.Round(loadAvg.Load5*100) / 100
+	data["la_15"] = math.Round(loadAvg.Load15*100) / 100
 
 	// Calculate CPU usage
 	cpuTimes, err := cpu.Times(false)
