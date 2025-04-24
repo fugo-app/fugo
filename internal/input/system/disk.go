@@ -63,14 +63,14 @@ func (di *diskInfo) getIO(data map[string]any) error {
 	}
 
 	if di.ok {
-		data["disk_read_bytes"] = int64(diskIO.ReadCount - di.ioRead)
-		data["disk_write_bytes"] = int64(diskIO.WriteCount - di.ioWrite)
+		data["disk_read_bytes"] = int64(diskIO.ReadBytes - di.ioRead)
+		data["disk_write_bytes"] = int64(diskIO.WriteBytes - di.ioWrite)
 	} else {
 		di.ok = true
 	}
 
-	di.ioRead = diskIO.ReadCount
-	di.ioWrite = diskIO.WriteCount
+	di.ioRead = diskIO.ReadBytes
+	di.ioWrite = diskIO.WriteBytes
 
 	return nil
 }
