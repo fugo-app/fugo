@@ -44,18 +44,18 @@ func (sw *SystemWatcher) Fields() []*field.Field {
 		// DISK
 		{Name: "disk_usage", Type: "float", Description: "Disk usage percentage"},
 		{Name: "disk_total", Type: "int", Description: "Disk total size in bytes"},
-		{Name: "disk_read_bytes", Type: "int", Description: "Disk I/O read bytes"},
-		{Name: "disk_write_bytes", Type: "int", Description: "Disk I/O write bytes"},
+		{Name: "disk_read_bytes", Type: "int", Description: "Delta of read bytes"},
+		{Name: "disk_write_bytes", Type: "int", Description: "Delta of write bytes"},
 		// NET
 		{Name: "net_if", Type: "string", Description: "Network interface name"},
-		{Name: "net_rx_bytes", Type: "int", Description: "Network receive bytes"},
-		{Name: "net_tx_bytes", Type: "int", Description: "Network transmit bytes"},
-		{Name: "net_rx_packets", Type: "int", Description: "Network receive packets"},
-		{Name: "net_tx_packets", Type: "int", Description: "Network transmit packets"},
-		{Name: "net_rx_errors", Type: "int", Description: "Network receive errors"},
-		{Name: "net_tx_errors", Type: "int", Description: "Network transmit errors"},
-		{Name: "net_rx_dropped", Type: "int", Description: "Network dropped incoming packets"},
-		{Name: "net_tx_dropped", Type: "int", Description: "Network dropped outgoing packets"},
+		{Name: "net_rx_bytes", Type: "int", Description: "Delta of received bytes"},
+		{Name: "net_tx_bytes", Type: "int", Description: "Delta of transmitted bytes"},
+		{Name: "net_rx_packets", Type: "int", Description: "Delta of received packets"},
+		{Name: "net_tx_packets", Type: "int", Description: "Delta of transmitted packets"},
+		{Name: "net_rx_errors", Type: "int", Description: "Delta of receive errors"},
+		{Name: "net_tx_errors", Type: "int", Description: "Delta of transmit errors"},
+		{Name: "net_rx_dropped", Type: "int", Description: "Delta of dropped incoming packets"},
+		{Name: "net_tx_dropped", Type: "int", Description: "Delta of dropped outgoing packets"},
 	}
 }
 
