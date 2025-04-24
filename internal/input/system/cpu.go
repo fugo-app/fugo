@@ -10,6 +10,7 @@ import (
 )
 
 type cpuInfo struct {
+	ok   bool
 	used float64
 	idle float64
 }
@@ -41,13 +42,14 @@ func (ci *cpuInfo) collect(data map[string]any) error {
 		cpuTime.GuestNice
 	cpuIdle := cpuTime.Idle + cpuTime.Iowait
 
-	if ci.used != 0 {
+	if ci.ok {
 		deltaUsed := cpuUsed - ci.used
 		deltaIdle := cpuIdle - ci.idle
 		total := deltaUsed + deltaIdle
 		data["cpu_usage"] = math.Round(deltaUsed/total*100*100) / 100
 	} else {
 		data["cpu_usage"] = float64(0)
+		ci.ok = true
 	}
 
 	data["cpu_cores"] = int64(runtime.NumCPU())
