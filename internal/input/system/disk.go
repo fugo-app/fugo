@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/shirou/gopsutil/v4/disk"
 )
@@ -15,9 +14,9 @@ type diskInfo struct {
 	path   string
 	device string
 
-	timestamp time.Time
-	ioRead    uint64
-	ioWrite   uint64
+	ok      bool
+	ioRead  uint64
+	ioWrite uint64
 }
 
 func (di *diskInfo) init(path string) error {
@@ -46,8 +45,8 @@ func (di *diskInfo) init(path string) error {
 }
 
 func (di *diskInfo) getIO(data map[string]any) error {
-	data["disk_io_read"] = int64(0)
-	data["disk_io_write"] = int64(0)
+	data["disk_read_bytes"] = int64(0)
+	data["disk_write_bytes"] = int64(0)
 
 	if di.device == "" {
 		return nil
@@ -63,22 +62,15 @@ func (di *diskInfo) getIO(data map[string]any) error {
 		return nil
 	}
 
-	now := time.Now()
-
-	if !di.timestamp.IsZero() {
-		interval := now.Sub(di.timestamp).Seconds()
-		if interval > 0 {
-			readRate := float64(diskIO.ReadCount-di.ioRead) / 1024 / interval
-			writeRate := float64(diskIO.WriteCount-di.ioWrite) / 1024 / interval
-
-			data["disk_io_read"] = int64(readRate * 8)
-			data["disk_io_write"] = int64(writeRate * 8)
-		}
+	if di.ok {
+		data["disk_read_bytes"] = int64(diskIO.ReadCount - di.ioRead)
+		data["disk_write_bytes"] = int64(diskIO.WriteCount - di.ioWrite)
+	} else {
+		di.ok = true
 	}
 
 	di.ioRead = diskIO.ReadCount
 	di.ioWrite = diskIO.WriteCount
-	di.timestamp = now
 
 	return nil
 }
