@@ -31,31 +31,31 @@ type SystemWatcher struct {
 func (sw *SystemWatcher) Fields() []*field.Field {
 	return []*field.Field{
 		{Name: "time", Type: "time"},
-		{Name: "uptime", Type: "int"},
+		{Name: "uptime", Type: "int", Description: "System uptime in seconds"},
 		// CPU
-		{Name: "la_1", Type: "float"},
-		{Name: "la_5", Type: "float"},
-		{Name: "la_15", Type: "float"},
-		{Name: "cpu_usage", Type: "float"},
-		{Name: "cpu_cores", Type: "int"},
+		{Name: "la_1", Type: "float", Description: "Load average for 1 minute"},
+		{Name: "la_5", Type: "float", Description: "Load average for 5 minutes"},
+		{Name: "la_15", Type: "float", Description: "Load average for 15 minutes"},
+		{Name: "cpu_usage", Type: "float", Description: "CPU usage percentage"},
+		{Name: "cpu_cores", Type: "int", Description: "Number of CPU cores"},
 		// MEM
-		{Name: "mem_usage", Type: "float"},
-		{Name: "mem_total", Type: "int"},
+		{Name: "mem_usage", Type: "float", Description: "Memory usage percentage"},
+		{Name: "mem_total", Type: "int", Description: "Memory total size in bytes"},
 		// DISK
-		{Name: "disk_usage", Type: "float"},
-		{Name: "disk_total", Type: "int"},
-		{Name: "disk_io_read", Type: "int"},
-		{Name: "disk_io_write", Type: "int"},
+		{Name: "disk_usage", Type: "float", Description: "Disk usage percentage"},
+		{Name: "disk_total", Type: "int", Description: "Disk total size in bytes"},
+		{Name: "disk_read_bytes", Type: "int", Description: "Disk I/O read bytes"},
+		{Name: "disk_write_bytes", Type: "int", Description: "Disk I/O write bytes"},
 		// NET
-		{Name: "net_if", Type: "string"},
-		{Name: "net_rx_bytes", Type: "int"},
-		{Name: "net_tx_bytes", Type: "int"},
-		{Name: "net_rx_packets", Type: "int"},
-		{Name: "net_tx_packets", Type: "int"},
-		{Name: "net_rx_errors", Type: "int"},
-		{Name: "net_tx_errors", Type: "int"},
-		{Name: "net_rx_dropped", Type: "int"},
-		{Name: "net_tx_dropped", Type: "int"},
+		{Name: "net_if", Type: "string", Description: "Network interface name"},
+		{Name: "net_rx_bytes", Type: "int", Description: "Network receive bytes"},
+		{Name: "net_tx_bytes", Type: "int", Description: "Network transmit bytes"},
+		{Name: "net_rx_packets", Type: "int", Description: "Network receive packets"},
+		{Name: "net_tx_packets", Type: "int", Description: "Network transmit packets"},
+		{Name: "net_rx_errors", Type: "int", Description: "Network receive errors"},
+		{Name: "net_tx_errors", Type: "int", Description: "Network transmit errors"},
+		{Name: "net_rx_dropped", Type: "int", Description: "Network dropped incoming packets"},
+		{Name: "net_tx_dropped", Type: "int", Description: "Network dropped outgoing packets"},
 	}
 }
 

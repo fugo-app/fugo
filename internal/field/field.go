@@ -17,6 +17,8 @@ type fieldConverter interface {
 type Field struct {
 	// Name of the field in the log record.
 	Name string `yaml:"name"`
+	// Description of the field.
+	Description string `yaml:"description,omitempty"`
 	// Source field name to extract the value from.
 	Source string `yaml:"source,omitempty"`
 	// Feild type: "string" (default), "int", "float", "time" (default for field with time_format).
