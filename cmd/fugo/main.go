@@ -36,7 +36,7 @@ func main() {
 	pflag.Parse()
 
 	if *versionFlag {
-		fmt.Println("Fugo version", Version)
+		fmt.Println("Fugo", Version)
 		os.Exit(0)
 	}
 
