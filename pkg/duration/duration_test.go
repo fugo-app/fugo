@@ -42,6 +42,14 @@ func Test_Parse(t *testing.T) {
 			want:  ((24 + 14) * time.Hour) + (30 * time.Minute),
 		},
 		{
+			input: "3600",
+			want:  3600 * time.Second,
+		},
+		{
+			input: "1m30",
+			want:  time.Minute + (30 * time.Second),
+		},
+		{
 			input:   "invalid",
 			wantErr: true,
 		},

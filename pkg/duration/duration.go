@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-var reMatch = regexp.MustCompile(`(?i)^(\d+[smhd])+$`)
-var reParts = regexp.MustCompile(`(?i)(\d+)([smhd])`)
+var reMatch = regexp.MustCompile(`(?i)^(\d+[smhd]?)+$`)
+var reParts = regexp.MustCompile(`(?i)(\d+)([smhd]|$)`)
 
 var unitMap = map[byte]time.Duration{
 	's': time.Second,
@@ -36,11 +36,14 @@ func Parse(input string) (time.Duration, error) {
 
 		value, _ := strconv.Atoi(match[1])
 
-		key := match[2][0]
-		if key >= 'A' && key <= 'Z' {
-			key += 'a' - 'A' // Convert to lowercase
+		unit := time.Second
+		if match[2] != "" {
+			key := match[2][0]
+			if key >= 'A' && key <= 'Z' {
+				key += 'a' - 'A' // Convert to lowercase
+			}
+			unit = unitMap[key]
 		}
-		unit := unitMap[key]
 
 		total += time.Duration(value) * unit
 	}
