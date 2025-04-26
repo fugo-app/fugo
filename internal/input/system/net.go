@@ -8,11 +8,64 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/fugo-app/fugo/internal/field"
 )
 
+var netFields = []*field.Field{
+	{
+		Name:        "net_if",
+		Type:        "string",
+		Description: "Network interface name",
+	},
+	{
+		Name:        "net_rx_bytes",
+		Type:        "int",
+		Description: "Delta of received bytes",
+	},
+	{
+		Name:        "net_tx_bytes",
+		Type:        "int",
+		Description: "Delta of transmitted bytes",
+	},
+	{
+		Name:        "net_rx_packets",
+		Type:        "int",
+		Description: "Delta of received packets",
+	},
+	{
+		Name:        "net_tx_packets",
+		Type:        "int",
+		Description: "Delta of transmitted packets",
+	},
+	{
+		Name:        "net_rx_errors",
+		Type:        "int",
+		Description: "Delta of receive errors",
+	},
+	{
+		Name:        "net_tx_errors",
+		Type:        "int",
+		Description: "Delta of transmit errors",
+	},
+	{
+		Name:        "net_rx_dropped",
+		Type:        "int",
+		Description: "Delta of dropped incoming packets",
+	},
+	{
+		Name:        "net_tx_dropped",
+		Type:        "int",
+		Description: "Delta of dropped outgoing packets",
+	},
+}
+
 type netInfo struct {
+	Interface string `yaml:"interface,omitempty"`
+
 	initialized bool
 
+	ifname     string
 	rx_bytes   int64
 	tx_bytes   int64
 	rx_packets int64
@@ -69,13 +122,22 @@ func netReadStat(iface string, key string) int64 {
 	return 0
 }
 
-func (ni *netInfo) collect(data map[string]any) error {
-	iface, err := getDefaultInterface()
-	if err != nil {
-		return fmt.Errorf("get network usage: %w", err)
+func (ni *netInfo) init() error {
+	if ni.Interface != "default" {
+		ni.ifname = ni.Interface
+	} else {
+		iface, err := getDefaultInterface()
+		if err != nil {
+			return fmt.Errorf("get default interface: %w", err)
+		}
+		ni.ifname = iface
 	}
 
-	data["net_if"] = iface
+	return nil
+}
+
+func (ni *netInfo) collect(data map[string]any) error {
+	data["net_if"] = ni.ifname
 
 	fields := []struct {
 		name string
@@ -92,7 +154,7 @@ func (ni *netInfo) collect(data map[string]any) error {
 	}
 
 	for _, field := range fields {
-		val := netReadStat(iface, field.name)
+		val := netReadStat(ni.ifname, field.name)
 		delta := int64(0)
 		if ni.initialized {
 			delta = val - *field.ptr

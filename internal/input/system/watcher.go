@@ -15,48 +15,45 @@ type SystemWatcher struct {
 	// Interval to check the system status. Default is 60s
 	Interval string `yaml:"interval,omitempty"`
 
-	// Path to check the disk usage. Default is "/var/lib"
-	DiskPath string `yaml:"disk_path,omitempty"`
+	Disk *diskInfo `yaml:"disk,omitempty"`
+	Net  *netInfo  `yaml:"net,omitempty"`
 
 	interval  time.Duration
 	processor input.Processor
 
-	cpu  cpuInfo
-	disk diskInfo
-	net  netInfo
+	cpu cpuInfo
 
 	stop chan struct{}
 }
 
+var baseFields = []*field.Field{
+	{
+		Name: "time",
+		Type: "time",
+	},
+	{
+		Name:        "uptime",
+		Type:        "int",
+		Description: "System uptime in seconds",
+	},
+}
+
 func (sw *SystemWatcher) Fields() []*field.Field {
-	return []*field.Field{
-		{Name: "time", Type: "time"},
-		{Name: "uptime", Type: "int", Description: "System uptime in seconds"},
-		// CPU
-		{Name: "la_1", Type: "float", Description: "Load average for 1 minute"},
-		{Name: "la_5", Type: "float", Description: "Load average for 5 minutes"},
-		{Name: "la_15", Type: "float", Description: "Load average for 15 minutes"},
-		{Name: "cpu_usage", Type: "float", Description: "CPU usage percentage"},
-		{Name: "cpu_cores", Type: "int", Description: "Number of CPU cores"},
-		// MEM
-		{Name: "mem_usage", Type: "float", Description: "Memory usage percentage"},
-		{Name: "mem_total", Type: "int", Description: "Memory total size in bytes"},
-		// DISK
-		{Name: "disk_usage", Type: "float", Description: "Disk usage percentage"},
-		{Name: "disk_total", Type: "int", Description: "Disk total size in bytes"},
-		{Name: "disk_read_bytes", Type: "int", Description: "Delta of read bytes"},
-		{Name: "disk_write_bytes", Type: "int", Description: "Delta of write bytes"},
-		// NET
-		{Name: "net_if", Type: "string", Description: "Network interface name"},
-		{Name: "net_rx_bytes", Type: "int", Description: "Delta of received bytes"},
-		{Name: "net_tx_bytes", Type: "int", Description: "Delta of transmitted bytes"},
-		{Name: "net_rx_packets", Type: "int", Description: "Delta of received packets"},
-		{Name: "net_tx_packets", Type: "int", Description: "Delta of transmitted packets"},
-		{Name: "net_rx_errors", Type: "int", Description: "Delta of receive errors"},
-		{Name: "net_tx_errors", Type: "int", Description: "Delta of transmit errors"},
-		{Name: "net_rx_dropped", Type: "int", Description: "Delta of dropped incoming packets"},
-		{Name: "net_tx_dropped", Type: "int", Description: "Delta of dropped outgoing packets"},
+	fields := make([]*field.Field, 0)
+
+	fields = append(fields, baseFields...)
+	fields = append(fields, cpuFields...)
+	fields = append(fields, memFields...)
+
+	if sw.Disk != nil {
+		fields = append(fields, diskFields...)
 	}
+
+	if sw.Net != nil {
+		fields = append(fields, netFields...)
+	}
+
+	return fields
 }
 
 func (sw *SystemWatcher) Init(processor input.Processor) error {
@@ -70,7 +67,9 @@ func (sw *SystemWatcher) Init(processor input.Processor) error {
 	}
 	sw.processor = processor
 
-	sw.disk.init(sw.DiskPath)
+	if sw.Disk != nil {
+		sw.Disk.init()
+	}
 
 	return nil
 }
@@ -128,11 +127,11 @@ func (sw *SystemWatcher) _collect() error {
 		return err
 	}
 
-	if err := sw.disk.collect(data); err != nil {
+	if err := sw.Disk.collect(data); err != nil {
 		return err
 	}
 
-	if err := sw.net.collect(data); err != nil {
+	if err := sw.Net.collect(data); err != nil {
 		return err
 	}
 

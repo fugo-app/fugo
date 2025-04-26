@@ -7,24 +7,48 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/fugo-app/fugo/internal/field"
 	"github.com/shirou/gopsutil/v4/disk"
 )
 
-type diskInfo struct {
-	path   string
-	device string
+var diskFields = []*field.Field{
+	{
+		Name:        "disk_dev",
+		Type:        "string",
+		Description: "Disk device name",
+	},
+	{
+		Name:        "disk_usage",
+		Type:        "float",
+		Description: "Disk usage percentage",
+	},
+	{
+		Name:        "disk_total",
+		Type:        "int",
+		Description: "Disk total size in bytes",
+	},
+	{
+		Name:        "disk_read_bytes",
+		Type:        "int",
+		Description: "Delta of read bytes",
+	},
+	{
+		Name:        "disk_write_bytes",
+		Type:        "int",
+		Description: "Delta of write bytes",
+	},
+}
 
+type diskInfo struct {
+	Path string `yaml:"path"`
+
+	dev     string
 	ok      bool
 	ioRead  uint64
 	ioWrite uint64
 }
 
-func (di *diskInfo) init(path string) error {
-	if path == "" {
-		path = "/var/lib"
-	}
-	di.path = path
-
+func (di *diskInfo) init() error {
 	partitions, err := disk.Partitions(false)
 	if err != nil {
 		return fmt.Errorf("get partitions: %w", err)
@@ -35,8 +59,8 @@ func (di *diskInfo) init(path string) error {
 	})
 
 	for _, p := range partitions {
-		if strings.HasPrefix(di.path, p.Mountpoint) {
-			di.device = filepath.Base(p.Device)
+		if strings.HasPrefix(di.Path, p.Mountpoint) {
+			di.dev = filepath.Base(p.Device)
 			break
 		}
 	}
@@ -48,16 +72,16 @@ func (di *diskInfo) getIO(data map[string]any) error {
 	data["disk_read_bytes"] = int64(0)
 	data["disk_write_bytes"] = int64(0)
 
-	if di.device == "" {
+	if di.dev == "" {
 		return nil
 	}
 
-	counters, err := disk.IOCounters(di.device)
+	counters, err := disk.IOCounters(di.dev)
 	if err != nil {
 		return fmt.Errorf("get disk io counters: %w", err)
 	}
 
-	diskIO, ok := counters[di.device]
+	diskIO, ok := counters[di.dev]
 	if !ok {
 		return nil
 	}
@@ -76,10 +100,12 @@ func (di *diskInfo) getIO(data map[string]any) error {
 }
 
 func (di *diskInfo) collect(data map[string]any) error {
-	diskStat, err := disk.Usage(di.path)
+	diskStat, err := disk.Usage(di.Path)
 	if err != nil {
 		return fmt.Errorf("get disk usage: %w", err)
 	}
+
+	data["disk_dev"] = di.dev
 
 	data["disk_usage"] = math.Round(diskStat.UsedPercent*100) / 100
 	data["disk_total"] = int64(diskStat.Total)

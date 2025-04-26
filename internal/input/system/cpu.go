@@ -5,9 +5,38 @@ import (
 	"math"
 	"runtime"
 
+	"github.com/fugo-app/fugo/internal/field"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/load"
 )
+
+var cpuFields = []*field.Field{
+	{
+		Name:        "la_1",
+		Type:        "float",
+		Description: "Load average for 1 minute",
+	},
+	{
+		Name:        "la_5",
+		Type:        "float",
+		Description: "Load average for 5 minutes",
+	},
+	{
+		Name:        "la_15",
+		Type:        "float",
+		Description: "Load average for 15 minutes",
+	},
+	{
+		Name:        "cpu_usage",
+		Type:        "float",
+		Description: "CPU usage percentage",
+	},
+	{
+		Name:        "cpu_cores",
+		Type:        "int",
+		Description: "Number of CPU cores",
+	},
+}
 
 type cpuInfo struct {
 	ok   bool

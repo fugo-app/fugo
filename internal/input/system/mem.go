@@ -4,8 +4,22 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/fugo-app/fugo/internal/field"
 	"github.com/shirou/gopsutil/v4/mem"
 )
+
+var memFields = []*field.Field{
+	{
+		Name:        "mem_usage",
+		Type:        "float",
+		Description: "Memory usage percentage",
+	},
+	{
+		Name:        "mem_total",
+		Type:        "int",
+		Description: "Memory total size in bytes",
+	},
+}
 
 func collectMem(data map[string]any) error {
 	memStat, err := mem.VirtualMemory()
