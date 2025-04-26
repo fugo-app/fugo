@@ -68,7 +68,15 @@ func (sw *SystemWatcher) Init(processor input.Processor) error {
 	sw.processor = processor
 
 	if sw.Disk != nil {
-		sw.Disk.init()
+		if err := sw.Disk.init(); err != nil {
+			return fmt.Errorf("init disk info: %w", err)
+		}
+	}
+
+	if sw.Net != nil {
+		if err := sw.Net.init(); err != nil {
+			return fmt.Errorf("init net info: %w", err)
+		}
 	}
 
 	return nil
