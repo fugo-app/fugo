@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -54,10 +55,10 @@ func main() {
 	}
 	defer a.stop()
 
-	signalCh := make(chan os.Signal, 1)
-	signal.Notify(signalCh, os.Interrupt, syscall.SIGTERM)
+	signalCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
 
-	<-signalCh
+	<-signalCtx.Done()
 }
 
 func (a *appInstance) loadAgents(configDir string) error {
