@@ -300,7 +300,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "since filter",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetFilter("time", "since", "2025-01-02T13:00:00")
 			},
 			want: []map[string]any{
 				{"_cursor": "0000000000000003", "time": int64(1735823700000)},
@@ -311,7 +311,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "until filter",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 13:00:00")
+				q.SetFilter("time", "until", "2025-01-02T13:00:00")
 			},
 			want: []map[string]any{
 				{"_cursor": "0000000000000001", "time": int64(1735812000000)},
@@ -321,7 +321,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "since filter with limit",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetFilter("time", "since", "2025-01-02T13:00:00")
 				q.SetLimit(2)
 			},
 			want: []map[string]any{
@@ -332,7 +332,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "until filter with limit",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 14:00:00")
+				q.SetFilter("time", "until", "2025-01-02T14:00:00")
 				q.SetLimit(2)
 			},
 			want: []map[string]any{
@@ -343,7 +343,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "since filter with after cursor",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetFilter("time", "since", "2025-01-02T13:00:00")
 				q.SetAfter(2)
 			},
 			want: []map[string]any{}, // No records should be returned
@@ -351,7 +351,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "until filter with before cursor",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 14:00:00")
+				q.SetFilter("time", "until", "2025-01-02T14:00:00")
 				q.SetBefore(2)
 			},
 			want: []map[string]any{}, // No records should be returned
@@ -359,7 +359,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "since filter with before cursor",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "since", "2025-01-02 13:00:00")
+				q.SetFilter("time", "since", "2025-01-02T13:00:00")
 				q.SetBefore(5)
 			},
 			want: []map[string]any{
@@ -370,7 +370,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 		{
 			name: "until filter with after cursor",
 			modifier: func(q *Query) {
-				q.SetFilter("time", "until", "2025-01-02 14:00:00")
+				q.SetFilter("time", "until", "2025-01-02T14:00:00")
 				q.SetAfter(1)
 			},
 			want: []map[string]any{
@@ -379,7 +379,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 			},
 		},
 		{
-			// time.Now() returns 2025-01-02 13:00:00 UTC
+			// time.Now() returns 2025-01-02T13:00:00 UTC
 			name: "since filter relative",
 			modifier: func(q *Query) {
 				q.SetFilter("time", "since", "1h")
@@ -391,7 +391,7 @@ func testQuery_Time(t *testing.T, storage StorageDriver) {
 			},
 		},
 		{
-			// time.Now() returns 2025-01-02 13:00:00 UTC
+			// time.Now() returns 2025-01-02T13:00:00 UTC
 			name: "until filter relative",
 			modifier: func(q *Query) {
 				q.SetFilter("time", "until", "1h")
