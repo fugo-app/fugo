@@ -23,6 +23,8 @@ type Field struct {
 	Source string `yaml:"source,omitempty"`
 	// Feild type: "string" (default), "int", "float", "time" (default for field with time_format).
 	Type string `yaml:"type,omitempty"`
+	// Index indicates if the field should be indexed.
+	Index bool `yaml:"index,omitempty"`
 	// Template to convert source fields into new record field.
 	Template string `yaml:"template,omitempty"`
 	// Layout to parse the time string. Only for the "time" field.

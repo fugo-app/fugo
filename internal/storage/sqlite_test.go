@@ -27,6 +27,7 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 		{Name: "message", Type: "string"},
 		{Name: "count", Type: "int"},
 		{Name: "value", Type: "float"},
+		{Name: "indexed", Type: "string", Index: true},
 	})
 
 	t.Run("create table", func(t *testing.T) {
@@ -50,6 +51,7 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 			"message":   "TEXT",
 			"count":     "INTEGER",
 			"value":     "REAL",
+			"indexed":   "TEXT",
 		}
 
 		require.Equal(t, expectedColumns, columns, "Table columns do not match expected structure")
@@ -76,12 +78,18 @@ func TestSQLiteStorage_createTable(t *testing.T) {
 
 			if name == "_cursor" {
 				hasCursor = true
-
 				require.Equal(t, 1, pk, "Cursor column should be primary key")
 			}
 		}
 
 		require.True(t, hasCursor, "Table should have _cursor column")
+	})
+
+	t.Run("check index for indexed", func(t *testing.T) {
+		indexes, err := storage.getIndexes(name)
+		require.NoError(t, err, "Failed to query index list")
+		_, found := indexes["indexed"]
+		require.True(t, found, "Index for indexed should exist")
 	})
 }
 
@@ -216,6 +224,49 @@ func TestSQLiteStorage_MigrateChangeColumnType(t *testing.T) {
 		require.NoError(t, storage.migrateTable(name, fields), "Failed to migrate table")
 		testSqlite_VerifyDB(t, storage, name, fields)
 	})
+}
+
+func TestSQLiteStorage_MigrateIndexed(t *testing.T) {
+	storage := &SQLiteStorage{Path: ":memory:"}
+	require.NoError(t, storage.Open(), "Failed to open SQLite database")
+	defer storage.Close()
+
+	table := "test_migrate_indexed"
+
+	// 1. Create table with no indexes
+	fields := testSqlite_InitFields(t, []*field.Field{
+		{Name: "foo", Type: "string", Index: false},
+		{Name: "bar", Type: "int", Index: false},
+	})
+	require.NoError(t, storage.createTable(table, fields), "Failed to create table")
+
+	indexes, err := storage.getIndexes(table)
+	require.NoError(t, err)
+	require.Empty(t, indexes, "No indexes should exist after initial create")
+
+	// 2. Add index to field foo
+	fields = testSqlite_InitFields(t, []*field.Field{
+		{Name: "foo", Type: "string", Index: true},
+		{Name: "bar", Type: "int", Index: false},
+	})
+	require.NoError(t, storage.migrateTable(table, fields), "Failed to migrate table (add index)")
+
+	indexes, err = storage.getIndexes(table)
+	require.NoError(t, err)
+	_, ok := indexes["foo"]
+	require.True(t, ok, "Index for foo should exist after migration")
+
+	// 3. Remove index from field foo
+	fields = testSqlite_InitFields(t, []*field.Field{
+		{Name: "foo", Type: "string", Index: false},
+		{Name: "bar", Type: "int", Index: false},
+	})
+	require.NoError(t, storage.migrateTable(table, fields), "Failed to migrate table (remove index)")
+
+	indexes, err = storage.getIndexes(table)
+	require.NoError(t, err)
+	_, ok = indexes["foo"]
+	require.False(t, ok, "Index for foo should be removed after migration")
 }
 
 func TestSQLiteStorage_Cleanup(t *testing.T) {

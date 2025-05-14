@@ -314,6 +314,56 @@ func (ss *SQLiteStorage) getColumns(name string) (map[string]string, error) {
 	return columns, nil
 }
 
+func (ss *SQLiteStorage) getIndexes(name string) (map[string]struct{}, error) {
+	query := fmt.Sprintf("PRAGMA index_list(`%s`)", name)
+	indexRows, err := ss.db.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("get index list: %w", err)
+	}
+	defer indexRows.Close()
+
+	prefix := fmt.Sprintf("idx_%s_", name)
+
+	indexes := make(map[string]struct{})
+	for indexRows.Next() {
+		var (
+			seq     int
+			name    string
+			unique  int
+			origin  string
+			partial int
+		)
+		if err := indexRows.Scan(&seq, &name, &unique, &origin, &partial); err == nil {
+			if strings.HasPrefix(name, prefix) {
+				fieldName := name[len(prefix):]
+				indexes[fieldName] = struct{}{}
+			}
+		}
+	}
+
+	return indexes, nil
+}
+
+func (ss *SQLiteStorage) createIndex(name string, fname string) error {
+	indexName := fmt.Sprintf("idx_%s_%s", name, fname)
+	createIndexSQL := fmt.Sprintf("CREATE INDEX `%s` ON `%s`(`%s`)", indexName, name, fname)
+	if _, err := ss.db.Exec(createIndexSQL); err != nil {
+		return fmt.Errorf("create index on %s(%s): %w", name, fname, err)
+	}
+
+	return nil
+}
+
+func (ss *SQLiteStorage) dropIndex(name string, fname string) error {
+	indexName := fmt.Sprintf("idx_%s_%s", name, fname)
+	dropIndexSQL := fmt.Sprintf("DROP INDEX IF EXISTS `%s`", indexName)
+	if _, err := ss.db.Exec(dropIndexSQL); err != nil {
+		return fmt.Errorf("drop index for field %s: %w", fname, err)
+	}
+
+	return nil
+}
+
 func (ss *SQLiteStorage) createTable(name string, fields []*field.Field) error {
 	var columns []string
 
@@ -327,7 +377,20 @@ func (ss *SQLiteStorage) createTable(name string, fields []*field.Field) error {
 	createTableSQL := fmt.Sprintf("CREATE TABLE `%s` (%s)", name, strings.Join(columns, ", "))
 
 	_, err := ss.db.Exec(createTableSQL)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Create indexes
+	for _, f := range fields {
+		if f.Index {
+			if err := ss.createIndex(name, f.Name); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
 }
 
 func (ss *SQLiteStorage) migrateTable(name string, fields []*field.Field) error {
@@ -370,6 +433,28 @@ func (ss *SQLiteStorage) migrateTable(name string, fields []*field.Field) error 
 			)
 			if _, err := ss.db.Exec(alterQuery); err != nil {
 				return fmt.Errorf("add column %s: %w", desiredName, err)
+			}
+		}
+	}
+
+	// Migrate indexes
+	indexes, err := ss.getIndexes(name)
+	if err != nil {
+		return err
+	}
+
+	for _, f := range fields {
+		if f.Index {
+			if _, ok := indexes[f.Name]; !ok {
+				if err := ss.createIndex(name, f.Name); err != nil {
+					return err
+				}
+			}
+		} else {
+			if _, ok := indexes[f.Name]; ok {
+				if err := ss.dropIndex(name, f.Name); err != nil {
+					return err
+				}
 			}
 		}
 	}
